@@ -1,4 +1,4 @@
-use glfw::{Context, GlfwReceiver};
+use glfw::{Context, GlfwReceiver, Action, Key};
 
 const SCR_WIDTH : u32 = 800;
 const SCR_HEIGHT : u32 = 600;
@@ -21,11 +21,25 @@ fn main() {
 
     while !window.should_close() {
         process_events(&mut window, &events);
+
+        unsafe {
+            gl::ClearColor(0.2, 0.3, 0.3, 1.0);
+            gl::Clear(gl::COLOR_BUFFER_BIT);
+        };
+
         window.swap_buffers();
         glfw.poll_events();
     }
 }
 
-fn process_events(_window : &mut glfw::Window, _events : &GlfwReceiver<(f64, glfw::WindowEvent)>) {
-
+fn process_events(window : &mut glfw::Window, events : &GlfwReceiver<(f64, glfw::WindowEvent)>) {
+    for (_, event) in glfw::flush_messages(events) {
+        match event {
+            glfw::WindowEvent::FramebufferSize(width, height) => {
+                unsafe { gl::Viewport(0, 0, width, height)};
+            },
+            glfw::WindowEvent::Key(Key::Escape, _, Action::Press, _) => window.set_should_close(true),
+            _ => {},
+        }
+    }
 }
