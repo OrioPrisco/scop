@@ -4,6 +4,8 @@ use std::mem;
 use std::ffi::c_void;
 use std::ffi::CStr;
 
+use scop::vao::{self, Vao, BoundVao};
+
 const SCR_WIDTH : u32 = 800;
 const SCR_HEIGHT : u32 = 600;
 
@@ -46,15 +48,20 @@ fn main() {
 
     gl::load_with(|symbol| window.get_proc_address(symbol));
 
+    let mut context = vao::Context::new();
+
     let mut vbo : u32 = 0;
-    let mut vao : u32 = 0;
+    let mut vao = Vao::new().unwrap();
     unsafe {
-        gl::GenVertexArrays(1, &mut vao);
         gl::GenBuffers(1, &mut vbo);
 
-        gl::BindVertexArray(vao);
+    }
 
+    let bound_vao = BoundVao::new(&vao, &mut context);
+
+    unsafe {
         gl::BindBuffer(gl::ARRAY_BUFFER, vbo);
+
         gl::BufferData(gl::ARRAY_BUFFER, (mem::size_of::<f32>() * vertices.len()) as isize, vertices.as_ptr() as *const c_void, gl::STATIC_DRAW);
 
         gl::VertexAttribPointer(0, 3, gl::FLOAT, gl::FALSE, 3 * mem::size_of::<f32>() as i32, ptr::null() as *const c_void);
@@ -84,7 +91,7 @@ fn main() {
 
         //unbind vao and vbo
         gl::BindBuffer(gl::ARRAY_BUFFER, 0);
-        gl::BindVertexArray(0);
+        drop(bound_vao);
 
     };
     let shader_program : u32 = unsafe {gl::CreateProgram()};
@@ -106,7 +113,7 @@ fn main() {
             gl::Clear(gl::COLOR_BUFFER_BIT);//can error on bad bit passed
 
             gl::UseProgram(shader_program);
-            gl::BindVertexArray(vao);
+            let _bound_vao = BoundVao::new(&vao, &mut context);
             gl::DrawArrays(gl::TRIANGLES, 0, 3);
         };
 
