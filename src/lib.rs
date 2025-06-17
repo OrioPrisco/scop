@@ -18,7 +18,7 @@ pub enum GLError {
     OutOfMemory,
     InvalidFramebufferOperation,
     ContextLost,
-    Unknwon(GLenum),
+    Unknown(GLenum),
 }
 
 type GLResult<T> = Result<T, GLError>;
@@ -34,7 +34,7 @@ impl Display for GLError {
             GLError::OutOfMemory => write!(f, "OutOfMemory"),
             GLError::InvalidFramebufferOperation => write!(f, "InvalidFramebufferOperation"),
             GLError::ContextLost => write!(f, "ContextLost"),
-            GLError::Unknwon(err) => write!(f, "UnknownError({err})"),
+            GLError::Unknown(err) => write!(f, "UnknownError({err})"),
         }
     }
 }
@@ -53,7 +53,7 @@ pub fn get_error() -> GLResult<()> {
         gl::OUT_OF_MEMORY => Err(GLError::OutOfMemory),
         gl::INVALID_FRAMEBUFFER_OPERATION => Err(GLError::InvalidFramebufferOperation),
         gl::CONTEXT_LOST => Err(GLError::ContextLost),
-        err => Err(GLError::Unknwon(err)),
+        err => Err(GLError::Unknown(err)),
     }
 }
 
