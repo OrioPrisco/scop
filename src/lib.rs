@@ -4,8 +4,18 @@ use std::error::Error;
 use std::fmt::{self, Display};
 
 
-struct GL {
+pub struct GLContext {
+    pub vao : vao::Context,
+    pub vbo : vbo::Context,
+}
 
+impl GLContext {
+    pub fn new() -> GLContext {
+        GLContext{
+            vao : vao::Context::new(),
+            vbo : vbo::Context::new(),
+        }
+    }
 }
 
 #[derive(Debug)]
@@ -106,6 +116,59 @@ pub mod vao {
     impl<'a> Drop for BoundVao<'a> {
         fn drop(&mut self) {
             unsafe {gl::BindVertexArray(0)};
+        }
+    }
+}
+
+pub mod vbo {
+
+    use super::*;
+
+    //Empty struct that needs to be borrwed to bind a vbo
+    //Allows the borrow checker to detect lifetime issues with vbo binding
+    pub struct Context;
+
+    impl Context {
+        pub fn new() -> Context { Context }
+    }
+
+    #[repr(transparent)]
+    pub struct Vbo(GLuint);
+
+    //The currently bound VBO
+    pub struct BoundVbo<'a> {
+        handle : GLuint,
+        ctx_ref: &'a mut Context,
+    }
+
+    impl Vbo {
+        pub fn new() -> GLResult<Vbo> {
+            let mut vbo  = Vbo (0);
+            unsafe { gl::GenBuffers(1, &mut vbo.0); };
+            get_error()?;
+            Ok(vbo)
+        }
+        pub unsafe fn raw(&self) -> u32 {
+            self.0
+        }
+    }
+
+    impl<'a> BoundVbo<'a> {
+        pub fn new(vbo : &Vbo, ctx : &'a mut Context) -> BoundVbo<'a> {
+            unsafe { gl::BindBuffer(gl::ARRAY_BUFFER, vbo.0)};
+            get_error().unwrap();
+            BoundVbo{
+                handle: vbo.0,
+                ctx_ref: ctx,
+            }
+        }
+        pub unsafe fn raw(&self) -> u32 {
+            self.handle
+        }
+    }
+    impl<'a> Drop for BoundVbo<'a> {
+        fn drop(&mut self) {
+            unsafe {gl::BindBuffer(gl::ARRAY_BUFFER, 0)};
         }
     }
 }
