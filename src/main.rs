@@ -49,13 +49,13 @@ fn main() {
 
     gl::load_with(|symbol| window.get_proc_address(symbol));
 
-    let mut context = scop::GLContext::new();
+    let (mut vao_ctx, mut vbo_ctx) = scop::make_contexts();
 
     let mut vao = Vao::new().unwrap();
     let mut vbo = Vbo::new().unwrap();
 
-    let bound_vao = BoundVao::new(&vao, &mut context.vao);
-    let bound_vbo = BoundVbo::new(&vbo, &mut context.vbo);
+    let bound_vao = BoundVao::new(&vao, vao_ctx);
+    let bound_vbo = BoundVbo::new(&vbo, vbo_ctx);
 
     unsafe {
         gl::BufferData(gl::ARRAY_BUFFER, (mem::size_of::<f32>() * vertices.len()) as isize, vertices.as_ptr() as *const c_void, gl::STATIC_DRAW);
@@ -86,8 +86,8 @@ fn main() {
         println!("{status} : {}", std::str::from_utf8_unchecked(&info_log[..info_log_size as usize]));
 
         //unbind vao and vbo
-        drop(bound_vbo);
-        drop(bound_vao);
+        vao_ctx = bound_vao.unbind();
+        vbo_ctx = bound_vbo.unbind();
 
     };
     let shader_program : u32 = unsafe {gl::CreateProgram()};
@@ -109,8 +109,9 @@ fn main() {
             gl::Clear(gl::COLOR_BUFFER_BIT);//can error on bad bit passed
 
             gl::UseProgram(shader_program);
-            let _bound_vao = BoundVao::new(&vao, &mut context.vao);
+            let bound_vao = BoundVao::new(&vao, vao_ctx);
             gl::DrawArrays(gl::TRIANGLES, 0, 3);
+            vao_ctx = bound_vao.unbind();
         };
 
         window.swap_buffers();

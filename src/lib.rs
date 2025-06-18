@@ -4,18 +4,12 @@ use std::error::Error;
 use std::fmt::{self, Display};
 
 
-pub struct GLContext {
-    pub vao : vao::Context,
-    pub vbo : vbo::Context,
-}
 
-impl GLContext {
-    pub fn new() -> GLContext {
-        GLContext{
-            vao : vao::Context::new(),
-            vbo : vbo::Context::new(),
-        }
-    }
+pub fn make_contexts() -> (vao::Context, vbo::Context) {
+    (
+        vao::Context::new(),
+        vbo::Context::new(),
+    )
 }
 
 #[derive(Debug)]
@@ -84,8 +78,8 @@ pub mod vao {
 
     //The currently bound VAO
     pub struct BoundVao<'a> {
-        handle : GLuint,
-        ctx_ref: &'a mut Context,
+        vao : &'a Vao,
+        ctx : Context,
     }
 
     impl Vao {
@@ -101,21 +95,20 @@ pub mod vao {
     }
 
     impl<'a> BoundVao<'a> {
-        pub fn new(vao : &Vao, ctx : &'a mut Context) -> BoundVao<'a> {
+        pub fn new(vao : &'a Vao, ctx : Context) -> BoundVao<'a> {
             unsafe { gl::BindVertexArray(vao.0)};
             get_error().unwrap();
             BoundVao{
-                handle: vao.0,
-                ctx_ref: ctx,
+                vao,
+                ctx,
             }
         }
         pub unsafe fn raw(&self) -> u32 {
-            self.handle
+            self.vao.0
         }
-    }
-    impl<'a> Drop for BoundVao<'a> {
-        fn drop(&mut self) {
+        pub fn unbind(self) -> Context {
             unsafe {gl::BindVertexArray(0)};
+            self.ctx
         }
     }
 }
@@ -137,8 +130,8 @@ pub mod vbo {
 
     //The currently bound VBO
     pub struct BoundVbo<'a> {
-        handle : GLuint,
-        ctx_ref: &'a mut Context,
+        vbo: &'a Vbo,
+        ctx: Context,
     }
 
     impl Vbo {
@@ -154,21 +147,20 @@ pub mod vbo {
     }
 
     impl<'a> BoundVbo<'a> {
-        pub fn new(vbo : &Vbo, ctx : &'a mut Context) -> BoundVbo<'a> {
+        pub fn new(vbo : &'a Vbo, ctx : Context) -> BoundVbo<'a> {
             unsafe { gl::BindBuffer(gl::ARRAY_BUFFER, vbo.0)};
             get_error().unwrap();
             BoundVbo{
-                handle: vbo.0,
-                ctx_ref: ctx,
+                vbo,
+                ctx,
             }
         }
         pub unsafe fn raw(&self) -> u32 {
-            self.handle
+            self.vbo.0
         }
-    }
-    impl<'a> Drop for BoundVbo<'a> {
-        fn drop(&mut self) {
+        pub fn unbind(self) -> Context {
             unsafe {gl::BindBuffer(gl::ARRAY_BUFFER, 0)};
+            self.ctx
         }
     }
 }
