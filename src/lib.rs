@@ -70,7 +70,7 @@ pub mod vao {
     pub struct Context;
 
     impl Context {
-        pub fn new() -> Context { Context }
+        pub(crate) fn new() -> Context { Context }
     }
 
     #[repr(transparent)]
@@ -122,7 +122,7 @@ pub mod vbo {
     pub struct Context;
 
     impl Context {
-        pub fn new() -> Context { Context }
+        pub(crate) fn new() -> Context { Context }
     }
 
     #[repr(transparent)]
