@@ -4,12 +4,14 @@ use std::error::Error;
 use std::fmt::{self, Display};
 
 
+pub struct Context;
 
-pub fn make_contexts() -> (vao::Context, vbo::Context) {
-    (
-        vao::Context::new(),
-        vbo::Context::new(),
-    )
+//Empty struct that needs to be borrwed to bind a vao/vbo
+//Allows the borrow checker to detect lifetime issues with vao binding
+impl Context {
+    pub fn new() -> Context {
+        Context
+    }
 }
 
 #[derive(Debug)]
@@ -64,47 +66,53 @@ pub fn get_error() -> GLResult<()> {
 pub mod vao {
 
     use super::*;
+    use vbo::{self, Vbo, InternalBoundVbo};
 
-    //Empty struct that needs to be borrwed to bind a vao
-    //Allows the borrow checker to detect lifetime issues with vao binding
-    pub struct Context;
-
-    impl Context {
-        pub(crate) fn new() -> Context { Context }
+    pub struct Vao<'a> {
+        handle : GLuint,
+        vbo : Option<&'a Vbo>,
     }
 
-    #[repr(transparent)]
-    pub struct Vao(GLuint);
-
     //The currently bound VAO
-    pub struct BoundVao<'a> {
-        vao : &'a Vao,
+    pub struct BoundVao<'a,'b> {
+        vao : &'a mut Vao<'b>,
         ctx : Context,
     }
 
-    impl Vao {
-        pub fn new() -> GLResult<Vao> {
-            let mut vao  = Vao (0);
-            unsafe { gl::GenVertexArrays(1, &mut vao.0); };
+    impl<'a> Vao<'a> {
+        pub fn new() -> GLResult<Vao<'a>> {
+            let mut vao  = Vao {handle: 0, vbo: None};
+            unsafe { gl::GenVertexArrays(1, &mut vao.handle); };
             get_error()?;
             Ok(vao)
         }
         pub unsafe fn raw(&self) -> u32 {
-            self.0
+            self.handle
         }
     }
 
-    impl<'a> BoundVao<'a> {
-        pub fn new(vao : &'a Vao, ctx : Context) -> BoundVao<'a> {
-            unsafe { gl::BindVertexArray(vao.0)};
+    impl<'a,'b> BoundVao<'a,'b> {
+        pub fn new(vao : &'a mut Vao<'b>, ctx : Context) -> BoundVao<'a,'b> {
+            unsafe { gl::BindVertexArray(vao.handle)};
             get_error().unwrap();
             BoundVao{
                 vao,
                 ctx,
             }
         }
-        pub unsafe fn raw(&self) -> u32 {
-            self.vao.0
+        pub unsafe fn raw(&self) -> GLuint {
+            unsafe { self.vao.raw() }
+        }
+        pub fn bind_vbo(&mut self, vbo : &'b Vbo) {
+            self.vao.vbo.replace(vbo);
+            unsafe { gl::BindBuffer(gl::ARRAY_BUFFER, vbo.0)};
+        }
+        pub fn unbind_vbo(&mut self) {
+            self.vao.vbo.take();
+            unsafe { gl::BindBuffer(gl::ARRAY_BUFFER, 0)};
+        }
+        pub fn get_bind(&self) -> Option<InternalBoundVbo<'a>> {
+            self.vao.vbo.map(|vbo| InternalBoundVbo::new(vbo))
         }
         pub fn unbind(self) -> Context {
             unsafe {gl::BindVertexArray(0)};
@@ -119,20 +127,9 @@ pub mod vbo {
 
     //Empty struct that needs to be borrwed to bind a vbo
     //Allows the borrow checker to detect lifetime issues with vbo binding
-    pub struct Context;
-
-    impl Context {
-        pub(crate) fn new() -> Context { Context }
-    }
 
     #[repr(transparent)]
-    pub struct Vbo(GLuint);
-
-    //The currently bound VBO
-    pub struct BoundVbo<'a> {
-        vbo: &'a Vbo,
-        ctx: Context,
-    }
+    pub struct Vbo(pub(crate) GLuint);
 
     impl Vbo {
         pub fn new() -> GLResult<Vbo> {
@@ -146,17 +143,36 @@ pub mod vbo {
         }
     }
 
+    pub struct InternalBoundVbo<'a> {
+        pub(crate) vbo: &'a Vbo,
+    }
+
+    impl<'a> InternalBoundVbo<'a> {
+        pub(crate) fn new(vbo : &'a Vbo) -> InternalBoundVbo<'a> {
+            InternalBoundVbo{vbo}
+        }
+        pub unsafe fn raw(&self) -> GLuint {
+            unsafe { self.vbo.raw() }
+        }
+    }
+
+    //The currently bound VBO
+    pub struct BoundVbo<'a> {
+        vbo : InternalBoundVbo<'a>,
+        ctx: Context,
+    }
+
     impl<'a> BoundVbo<'a> {
         pub fn new(vbo : &'a Vbo, ctx : Context) -> BoundVbo<'a> {
             unsafe { gl::BindBuffer(gl::ARRAY_BUFFER, vbo.0)};
             get_error().unwrap();
             BoundVbo{
-                vbo,
+                vbo: InternalBoundVbo::new(vbo),
                 ctx,
             }
         }
         pub unsafe fn raw(&self) -> u32 {
-            self.vbo.0
+            unsafe { self.vbo.raw() }
         }
         pub fn unbind(self) -> Context {
             unsafe {gl::BindBuffer(gl::ARRAY_BUFFER, 0)};
