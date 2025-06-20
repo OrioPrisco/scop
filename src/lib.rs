@@ -68,19 +68,19 @@ pub mod vao {
     use super::*;
     use vbo::{self, Vbo, InternalBoundVbo};
 
-    pub struct Vao<'a> {
+    pub struct Vao<'vbo, 'vert> {
         handle : GLuint,
-        vbo : Option<&'a Vbo>,
+        vbo : Option<&'vbo Vbo<'vert>>,
     }
 
     //The currently bound VAO
-    pub struct BoundVao<'a,'b> {
-        vao : &'a mut Vao<'b>,
+    pub struct BoundVao<'vao,'vbo, 'vert> {
+        vao : &'vao mut Vao<'vbo, 'vert>,
         ctx : Context,
     }
 
-    impl<'a> Vao<'a> {
-        pub fn new() -> GLResult<Vao<'a>> {
+    impl<'vbo, 'vert> Vao<'vbo, 'vert> {
+        pub fn new() -> GLResult<Vao<'vbo, 'vert>> {
             let mut vao  = Vao {handle: 0, vbo: None};
             unsafe { gl::GenVertexArrays(1, &mut vao.handle); };
             get_error()?;
@@ -91,8 +91,8 @@ pub mod vao {
         }
     }
 
-    impl<'a,'b> BoundVao<'a,'b> {
-        pub fn new(vao : &'a mut Vao<'b>, ctx : Context) -> BoundVao<'a,'b> {
+    impl<'vao,'vbo, 'vert> BoundVao<'vao,'vbo, 'vert> {
+        pub fn new(vao : &'vao mut Vao<'vbo, 'vert>, ctx : Context) -> BoundVao<'vao,'vbo, 'vert> {
             unsafe { gl::BindVertexArray(vao.handle)};
             get_error().unwrap();
             BoundVao{
@@ -103,15 +103,15 @@ pub mod vao {
         pub unsafe fn raw(&self) -> GLuint {
             unsafe { self.vao.raw() }
         }
-        pub fn bind_vbo(&mut self, vbo : &'b Vbo) {
+        pub fn bind_vbo(&mut self, vbo : &'vbo Vbo<'vert>) {
             self.vao.vbo.replace(vbo);
-            unsafe { gl::BindBuffer(gl::ARRAY_BUFFER, vbo.0)};
+            unsafe { gl::BindBuffer(gl::ARRAY_BUFFER, vbo.raw())};
         }
         pub fn unbind_vbo(&mut self) {
             self.vao.vbo.take();
             unsafe { gl::BindBuffer(gl::ARRAY_BUFFER, 0)};
         }
-        pub fn get_bind(&self) -> Option<InternalBoundVbo<'a>> {
+        pub fn get_bind(&self) -> Option<InternalBoundVbo<'vbo, 'vert>> {
             self.vao.vbo.map(|vbo| InternalBoundVbo::new(vbo))
         }
         pub fn unbind(self) -> Context {
@@ -128,27 +128,32 @@ pub mod vbo {
     //Empty struct that needs to be borrwed to bind a vbo
     //Allows the borrow checker to detect lifetime issues with vbo binding
 
-    #[repr(transparent)]
-    pub struct Vbo(pub(crate) GLuint);
+    pub struct Vbo<'vert> {
+        pub(crate) handle : GLuint,
+        vertices : Option<&'vert[f32]>,
+    }
 
-    impl Vbo {
-        pub fn new() -> GLResult<Vbo> {
-            let mut vbo  = Vbo (0);
-            unsafe { gl::GenBuffers(1, &mut vbo.0); };
+    impl<'vert> Vbo<'vert> {
+        pub fn new() -> GLResult<Vbo<'vert>> {
+            let mut vbo  = Vbo {
+                handle: 0,
+                vertices: None,
+            };
+            unsafe { gl::GenBuffers(1, &mut vbo.handle); };
             get_error()?;
             Ok(vbo)
         }
         pub unsafe fn raw(&self) -> u32 {
-            self.0
+            self.handle
         }
     }
 
-    pub struct InternalBoundVbo<'a> {
-        pub(crate) vbo: &'a Vbo,
+    pub struct InternalBoundVbo<'vbo, 'vert> {
+        pub(crate) vbo: &'vbo Vbo<'vert>,
     }
 
-    impl<'a> InternalBoundVbo<'a> {
-        pub(crate) fn new(vbo : &'a Vbo) -> InternalBoundVbo<'a> {
+    impl<'vbo, 'vert> InternalBoundVbo<'vbo, 'vert> {
+        pub(crate) fn new(vbo : &'vbo Vbo<'vert>) -> InternalBoundVbo<'vbo, 'vert> {
             InternalBoundVbo{vbo}
         }
         pub unsafe fn raw(&self) -> GLuint {
@@ -157,14 +162,14 @@ pub mod vbo {
     }
 
     //The currently bound VBO
-    pub struct BoundVbo<'a> {
-        vbo : InternalBoundVbo<'a>,
+    pub struct BoundVbo<'vbo, 'vert> {
+        vbo : InternalBoundVbo<'vbo, 'vert>,
         ctx: Context,
     }
 
-    impl<'a> BoundVbo<'a> {
-        pub fn new(vbo : &'a Vbo, ctx : Context) -> BoundVbo<'a> {
-            unsafe { gl::BindBuffer(gl::ARRAY_BUFFER, vbo.0)};
+    impl<'vbo, 'vert> BoundVbo<'vbo, 'vert> {
+        pub fn new(vbo : &'vbo Vbo<'vert>, ctx : Context) -> BoundVbo<'vbo, 'vert> {
+            unsafe { gl::BindBuffer(gl::ARRAY_BUFFER, vbo.raw())};
             get_error().unwrap();
             BoundVbo{
                 vbo: InternalBoundVbo::new(vbo),
@@ -176,8 +181,8 @@ pub mod vbo {
             self.ctx
         }
     }
-    impl<'a> std::ops::Deref for BoundVbo<'a> {
-        type Target = InternalBoundVbo<'a>;
+    impl<'vbo,'vert> std::ops::Deref for BoundVbo<'vbo,'vert> {
+        type Target = InternalBoundVbo<'vbo,'vert>;
 
        fn deref(&self) -> &Self::Target { &self.vbo }
     }
