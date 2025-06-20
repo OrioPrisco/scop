@@ -74,6 +74,7 @@ pub mod vao {
     use super::*;
     use vbo::{self, InternalBoundVbo};
 
+    //TODO:impl Drop
     pub struct Vao<'vbo, 'vert> {
         handle : GLuint,
         vbo : Option<VboRef<'vbo, 'vert>>,
@@ -135,9 +136,7 @@ pub mod vbo {
 
     use super::*;
 
-    //Empty struct that needs to be borrwed to bind a vbo
-    //Allows the borrow checker to detect lifetime issues with vbo binding
-
+    //TODO:impl Drop
     pub struct Vbo<'vert> {
         pub(crate) handle : GLuint,
         vertices : Option<&'vert[f32]>,
@@ -240,6 +239,7 @@ pub mod shader {
 
     pub struct Shader(GLuint);
 
+    //TODO:impl Drop
     impl Shader {
         //TODO shader type enum
         pub fn new(program : &CStr, shader_type : GLuint) -> Result<Shader, Error>{
