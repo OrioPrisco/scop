@@ -3,6 +3,7 @@ use std::ptr;
 use std::mem;
 use std::ffi::c_void;
 use std::ffi::CStr;
+use std::cell::RefCell;
 
 use scop::vao::{Vao, BoundVao};
 use scop::vbo::{Vbo, BoundVbo};
@@ -52,14 +53,15 @@ fn main() {
     let mut context = scop::Context::new();
 
     let mut vao = Vao::new().unwrap();
-    let mut vbo = Vbo::new().unwrap();
+    let vbo = RefCell::new(Vbo::new().unwrap());
 
     let mut bound_vao = BoundVao::new(&mut vao, context);
     bound_vao.bind_vbo(&vbo);
 
-    unsafe {
-        gl::BufferData(gl::ARRAY_BUFFER, (mem::size_of::<f32>() * vertices.len()) as isize, vertices.as_ptr() as *const c_void, gl::STATIC_DRAW);
+    bound_vao.get_bind().unwrap().bind_data(&vertices);
 
+
+    unsafe {
         gl::VertexAttribPointer(0, 3, gl::FLOAT, gl::FALSE, 3 * mem::size_of::<f32>() as i32, ptr::null() as *const c_void);
         gl::EnableVertexAttribArray(0);
     };

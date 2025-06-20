@@ -2,6 +2,8 @@ use gl::types::*;
 use std::mem;
 use std::error::Error;
 use std::fmt::{self, Display};
+use std::ffi::c_void;
+use std::cell::RefCell;
 
 
 pub struct Context;
@@ -63,14 +65,16 @@ pub fn get_error() -> GLResult<()> {
     }
 }
 
+type VboRef<'vbo, 'vert> = &'vbo RefCell<vbo::Vbo<'vert>>;
+
 pub mod vao {
 
     use super::*;
-    use vbo::{self, Vbo, InternalBoundVbo};
+    use vbo::{self, InternalBoundVbo};
 
     pub struct Vao<'vbo, 'vert> {
         handle : GLuint,
-        vbo : Option<&'vbo Vbo<'vert>>,
+        vbo : Option<VboRef<'vbo, 'vert>>,
     }
 
     //The currently bound VAO
@@ -103,9 +107,9 @@ pub mod vao {
         pub unsafe fn raw(&self) -> GLuint {
             unsafe { self.vao.raw() }
         }
-        pub fn bind_vbo(&mut self, vbo : &'vbo Vbo<'vert>) {
+        pub fn bind_vbo(&mut self, vbo : VboRef<'vbo, 'vert>) {
             self.vao.vbo.replace(vbo);
-            unsafe { gl::BindBuffer(gl::ARRAY_BUFFER, vbo.raw())};
+            unsafe { gl::BindBuffer(gl::ARRAY_BUFFER, vbo.borrow().raw())};
         }
         pub fn unbind_vbo(&mut self) {
             self.vao.vbo.take();
@@ -149,15 +153,25 @@ pub mod vbo {
     }
 
     pub struct InternalBoundVbo<'vbo, 'vert> {
-        pub(crate) vbo: &'vbo Vbo<'vert>,
+        pub(crate) vbo: VboRef<'vbo, 'vert>,
     }
 
     impl<'vbo, 'vert> InternalBoundVbo<'vbo, 'vert> {
-        pub(crate) fn new(vbo : &'vbo Vbo<'vert>) -> InternalBoundVbo<'vbo, 'vert> {
+        pub(crate) fn new(vbo : VboRef<'vbo, 'vert>) -> InternalBoundVbo<'vbo, 'vert> {
             InternalBoundVbo{vbo}
         }
         pub unsafe fn raw(&self) -> GLuint {
-            unsafe { self.vbo.raw() }
+            unsafe { self.vbo.borrow().raw() }
+        }
+        pub fn bind_data<'a>(&'a mut self, vertices : &'vert[f32]) {
+            self.vbo.borrow_mut().vertices.replace(vertices);
+            unsafe { gl::NamedBufferData(
+                self.vbo.borrow().handle,
+                (vertices.len() * mem::size_of::<f32>()) as isize,
+                vertices.as_ptr() as *const c_void,
+                gl::STATIC_DRAW,
+            )};
+            get_error().unwrap();
         }
     }
 
@@ -168,8 +182,8 @@ pub mod vbo {
     }
 
     impl<'vbo, 'vert> BoundVbo<'vbo, 'vert> {
-        pub fn new(vbo : &'vbo Vbo<'vert>, ctx : Context) -> BoundVbo<'vbo, 'vert> {
-            unsafe { gl::BindBuffer(gl::ARRAY_BUFFER, vbo.raw())};
+        pub fn new(vbo : VboRef<'vbo, 'vert>, ctx : Context) -> BoundVbo<'vbo, 'vert> {
+            unsafe { gl::BindBuffer(gl::ARRAY_BUFFER, vbo.borrow().raw())};
             get_error().unwrap();
             BoundVbo{
                 vbo: InternalBoundVbo::new(vbo),
@@ -185,5 +199,8 @@ pub mod vbo {
         type Target = InternalBoundVbo<'vbo,'vert>;
 
        fn deref(&self) -> &Self::Target { &self.vbo }
+    }
+    impl<'vbo,'vert> std::ops::DerefMut for BoundVbo<'vbo,'vert> {
+       fn deref_mut(&mut self) -> &mut Self::Target { &mut self.vbo }
     }
 }
