@@ -7,6 +7,7 @@ use std::cell::RefCell;
 
 use scop::vao::{Vao, BoundVao};
 use scop::vbo::{Vbo, BoundVbo};
+use scop::shader;
 
 const SCR_WIDTH : u32 = 800;
 const SCR_HEIGHT : u32 = 600;
@@ -66,20 +67,13 @@ fn main() {
         let source_ptr : *const i8 = vertex_shader.as_ptr() as *const i8;
         gl::ShaderSource(vertex_shader_id, 1, &raw const source_ptr, ptr::null());//Todo : put this in a function
         gl::CompileShader(vertex_shader_id);
-        let mut status : i32 = 0;
-        let mut info_log : [u8; 512] = [0; 512];
-        let mut info_log_size : i32 = 0;
-        gl::GetShaderiv(vertex_shader_id, gl::COMPILE_STATUS, &mut status);
-        gl::GetShaderInfoLog(vertex_shader_id, 512, &mut info_log_size, info_log.as_mut_ptr() as *mut i8);
-        println!("{status} : {}", std::str::from_utf8_unchecked(&info_log[..info_log_size as usize]));
-        //TODO: check Compile status
+        let shader_error = shader::Error::get(vertex_shader_id);
+        println!("{}", shader_error);
         let source_ptr : *const i8 = fragment_shader.as_ptr() as *const i8;
         gl::ShaderSource(fragment_shader_id, 1, &raw const source_ptr, ptr::null());//Todo : put this in a function
+        let shader_error = shader::Error::get(fragment_shader_id);
         gl::CompileShader(fragment_shader_id);
-        //TODO: check Compile status
-        gl::GetShaderiv(fragment_shader_id, gl::COMPILE_STATUS, &mut status);
-        gl::GetShaderInfoLog(fragment_shader_id, 512, &mut info_log_size, info_log.as_mut_ptr() as *mut i8);
-        println!("{status} : {}", std::str::from_utf8_unchecked(&info_log[..info_log_size as usize]));
+        println!("{}", shader_error);
 
         //unbind vao and vbo
         context = bound_vao.unbind();

@@ -209,3 +209,31 @@ pub mod vbo {
        fn deref_mut(&mut self) -> &mut Self::Target { &mut self.vbo }
     }
 }
+
+pub mod shader {
+    use super::*;
+
+    #[derive(Debug)]
+    pub struct Error {
+        error: String,
+    }
+
+    impl Display for Error {
+        fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+            write!(f, "{}",  self.error)
+        }
+    }
+    impl super::Error for Error {}
+
+    impl Error {
+        pub fn get(shader : GLuint) -> Error {
+            let mut error_size = 0;
+            unsafe {gl::GetShaderiv(shader, gl::INFO_LOG_LENGTH, &mut error_size)};
+            get_error().unwrap();
+            let mut buffer : Vec<u8> = vec![0; error_size as usize];
+            unsafe {gl::GetShaderInfoLog(shader, error_size, ptr::null_mut(), buffer.as_mut_ptr() as *mut i8)};
+            get_error().unwrap();
+            Error{error : String::from_utf8(buffer).unwrap()}
+        }
+    }
+}
