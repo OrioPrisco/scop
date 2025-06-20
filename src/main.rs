@@ -7,7 +7,7 @@ use std::cell::RefCell;
 
 use scop::vao::{Vao, BoundVao};
 use scop::vbo::{Vbo, BoundVbo};
-use scop::shader::Shader;
+use scop::shader::{Shader, ShaderProgram};
 
 const SCR_WIDTH : u32 = 800;
 const SCR_HEIGHT : u32 = 600;
@@ -65,15 +65,7 @@ fn main() {
     let vertex_shader_id = Shader::new(vertex_shader, gl::VERTEX_SHADER).unwrap();
     let fragment_shader_id = Shader::new(fragment_shader, gl::FRAGMENT_SHADER).unwrap();
 
-    let shader_program : u32 = unsafe {gl::CreateProgram()};
-    unsafe {
-        gl::AttachShader(shader_program, vertex_shader_id.raw());
-        gl::AttachShader(shader_program, fragment_shader_id.raw());
-        gl::LinkProgram(shader_program);
-        //TODO check linking success
-
-        gl::UseProgram(shader_program);
-    };
+    let shader_program = ShaderProgram::new(&vertex_shader_id, &fragment_shader_id);
     //TODO delete shaders
 
     while !window.should_close() {
@@ -83,7 +75,7 @@ fn main() {
             gl::ClearColor(0.2, 0.3, 0.3, 1.0);//safe
             gl::Clear(gl::COLOR_BUFFER_BIT);//can error on bad bit passed
 
-            gl::UseProgram(shader_program);
+            shader_program.use_program();
             let bound_vao = BoundVao::new(&mut vao, context);
             gl::DrawArrays(gl::TRIANGLES, 0, 3);
             context = bound_vao.unbind();

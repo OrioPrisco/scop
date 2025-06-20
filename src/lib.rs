@@ -260,4 +260,30 @@ pub mod shader {
         }
         pub unsafe fn raw(&self) -> GLuint { self.0 }
     }
+
+    //TODO:impl Drop
+    pub struct ShaderProgram(GLuint);
+    impl ShaderProgram {
+        //TODO: Maybe take an array of programs ?
+        //Probably should enforce a vertex and fragment shader
+        pub fn new(vertex : &Shader, fragment : &Shader) -> ShaderProgram {
+            let program = unsafe {gl::CreateProgram()};
+            assert!(program != 0, " Couldn't create opengl program. Why idk");
+
+            unsafe {
+                gl::AttachShader(program, vertex.raw());
+                get_error().unwrap();
+                gl::AttachShader(program, fragment.raw());
+                get_error().unwrap();
+                gl::LinkProgram(program);
+                get_error().unwrap();
+                //TODO check linking success
+            }
+
+            ShaderProgram(program)
+        }
+        pub fn use_program(&self) {
+            unsafe {gl::UseProgram(self.0)};
+        }
+    }
 }
