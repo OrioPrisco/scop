@@ -7,7 +7,7 @@ use std::cell::RefCell;
 
 use scop::vao::{Vao, BoundVao};
 use scop::vbo::{Vbo, BoundVbo};
-use scop::shader;
+use scop::shader::Shader;
 
 const SCR_WIDTH : u32 = 800;
 const SCR_HEIGHT : u32 = 600;
@@ -60,29 +60,15 @@ fn main() {
     bound_vao.bind_vbo(&vbo);
 
     bound_vao.get_bind().unwrap().bind_data(&vertices);
+    context = bound_vao.unbind();
 
-    let vertex_shader_id = unsafe{ gl::CreateShader(gl::VERTEX_SHADER) };
-    let fragment_shader_id = unsafe{ gl::CreateShader(gl::FRAGMENT_SHADER) };
-    unsafe {
-        let source_ptr : *const i8 = vertex_shader.as_ptr() as *const i8;
-        gl::ShaderSource(vertex_shader_id, 1, &raw const source_ptr, ptr::null());//Todo : put this in a function
-        gl::CompileShader(vertex_shader_id);
-        let shader_error = shader::Error::get(vertex_shader_id);
-        println!("{}", shader_error);
-        let source_ptr : *const i8 = fragment_shader.as_ptr() as *const i8;
-        gl::ShaderSource(fragment_shader_id, 1, &raw const source_ptr, ptr::null());//Todo : put this in a function
-        let shader_error = shader::Error::get(fragment_shader_id);
-        gl::CompileShader(fragment_shader_id);
-        println!("{}", shader_error);
+    let vertex_shader_id = Shader::new(vertex_shader, gl::VERTEX_SHADER).unwrap();
+    let fragment_shader_id = Shader::new(fragment_shader, gl::FRAGMENT_SHADER).unwrap();
 
-        //unbind vao and vbo
-        context = bound_vao.unbind();
-
-    };
     let shader_program : u32 = unsafe {gl::CreateProgram()};
     unsafe {
-        gl::AttachShader(shader_program, vertex_shader_id);
-        gl::AttachShader(shader_program, fragment_shader_id);
+        gl::AttachShader(shader_program, vertex_shader_id.raw());
+        gl::AttachShader(shader_program, fragment_shader_id.raw());
         gl::LinkProgram(shader_program);
         //TODO check linking success
 

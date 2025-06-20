@@ -4,6 +4,7 @@ use std::ptr;
 use std::error::Error;
 use std::fmt::{self, Display};
 use std::ffi::c_void;
+use std::ffi::CStr;
 use std::cell::RefCell;
 
 
@@ -226,7 +227,7 @@ pub mod shader {
     impl super::Error for Error {}
 
     impl Error {
-        pub fn get(shader : GLuint) -> Error {
+        pub(self) fn get(shader : GLuint) -> Error {
             let mut error_size = 0;
             unsafe {gl::GetShaderiv(shader, gl::INFO_LOG_LENGTH, &mut error_size)};
             get_error().unwrap();
@@ -235,5 +236,28 @@ pub mod shader {
             get_error().unwrap();
             Error{error : String::from_utf8(buffer).unwrap()}
         }
+    }
+
+    pub struct Shader(GLuint);
+
+    impl Shader {
+        //TODO shader type enum
+        pub fn new(program : &CStr, shader_type : GLuint) -> Result<Shader, Error>{
+            let shader = unsafe {gl::CreateShader(shader_type)};
+            get_error().unwrap();
+            let mut status = 0;
+            let source_ptr : *const i8 = program.as_ptr() as *const i8;
+            unsafe{ gl::ShaderSource(shader, 1, &raw const source_ptr, ptr::null())};
+            get_error().unwrap();
+            unsafe {gl::CompileShader(shader)};
+            get_error().unwrap();
+            unsafe {gl::GetShaderiv(shader, gl::COMPILE_STATUS, &mut status)};
+            get_error().unwrap();
+            if status != 1 {
+                return Err(Error::get(shader));
+            }
+            Ok(Shader(shader))
+        }
+        pub unsafe fn raw(&self) -> GLuint { self.0 }
     }
 }
