@@ -1,5 +1,6 @@
 use gl::types::*;
 use std::mem;
+use std::ptr;
 use std::error::Error;
 use std::fmt::{self, Display};
 use std::ffi::c_void;
@@ -109,7 +110,11 @@ pub mod vao {
         }
         pub fn bind_vbo(&mut self, vbo : VboRef<'vbo, 'vert>) {
             self.vao.vbo.replace(vbo);
-            unsafe { gl::BindBuffer(gl::ARRAY_BUFFER, vbo.borrow().raw())};
+            unsafe {
+                gl::BindBuffer(gl::ARRAY_BUFFER, vbo.borrow().raw());
+                gl::VertexAttribPointer(0, 3, gl::FLOAT, gl::FALSE, 3 * mem::size_of::<f32>() as i32, ptr::null() as *const c_void);
+                gl::EnableVertexAttribArray(0);
+            };
         }
         pub fn unbind_vbo(&mut self) {
             self.vao.vbo.take();

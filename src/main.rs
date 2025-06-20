@@ -60,12 +60,6 @@ fn main() {
 
     bound_vao.get_bind().unwrap().bind_data(&vertices);
 
-
-    unsafe {
-        gl::VertexAttribPointer(0, 3, gl::FLOAT, gl::FALSE, 3 * mem::size_of::<f32>() as i32, ptr::null() as *const c_void);
-        gl::EnableVertexAttribArray(0);
-    };
-
     let vertex_shader_id = unsafe{ gl::CreateShader(gl::VERTEX_SHADER) };
     let fragment_shader_id = unsafe{ gl::CreateShader(gl::FRAGMENT_SHADER) };
     unsafe {
