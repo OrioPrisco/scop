@@ -171,12 +171,14 @@ pub mod vbo {
                 ctx,
             }
         }
-        pub unsafe fn raw(&self) -> u32 {
-            unsafe { self.vbo.raw() }
-        }
         pub fn unbind(self) -> Context {
             unsafe {gl::BindBuffer(gl::ARRAY_BUFFER, 0)};
             self.ctx
         }
+    }
+    impl<'a> std::ops::Deref for BoundVbo<'a> {
+        type Target = InternalBoundVbo<'a>;
+
+       fn deref(&self) -> &Self::Target { &self.vbo }
     }
 }
