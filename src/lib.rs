@@ -214,26 +214,39 @@ pub mod shader {
     use super::*;
 
     #[derive(Debug)]
-    pub struct Error {
-        error: String,
+    pub enum Error {
+        Shader(String),
+        Program(String),
     }
 
     impl Display for Error {
         fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-            write!(f, "{}",  self.error)
+            match self {
+                Error::Shader(error) => write!(f, "{}", error),
+                Error::Program(error) => write!(f, "{}", error),
+            }
         }
     }
     impl super::Error for Error {}
 
     impl Error {
-        pub(self) fn get(shader : GLuint) -> Error {
+        pub(self) fn shader_error(shader : GLuint) -> Error {
             let mut error_size = 0;
             unsafe {gl::GetShaderiv(shader, gl::INFO_LOG_LENGTH, &mut error_size)};
             get_error().unwrap();
             let mut buffer : Vec<u8> = vec![0; error_size as usize];
             unsafe {gl::GetShaderInfoLog(shader, error_size, ptr::null_mut(), buffer.as_mut_ptr() as *mut i8)};
             get_error().unwrap();
-            Error{error : String::from_utf8(buffer).unwrap()}
+            Error::Shader(String::from_utf8(buffer).unwrap())
+        }
+        pub(self) fn program_error(program : GLuint) -> Error {
+            let mut error_size = 0;
+            unsafe {gl::GetProgramiv(program, gl::INFO_LOG_LENGTH, &mut error_size)};
+            get_error().unwrap();
+            let mut buffer : Vec<u8> = vec![0; error_size as usize];
+            unsafe {gl::GetProgramInfoLog(program, error_size, ptr::null_mut(), buffer.as_mut_ptr() as *mut i8)};
+            get_error().unwrap();
+            Error::Program(String::from_utf8(buffer).unwrap())
         }
     }
 
@@ -254,7 +267,7 @@ pub mod shader {
             unsafe {gl::GetShaderiv(shader, gl::COMPILE_STATUS, &mut status)};
             get_error().unwrap();
             if status != 1 {
-                return Err(Error::get(shader));
+                return Err(Error::shader_error(shader));
             }
             Ok(Shader(shader))
         }
@@ -266,7 +279,7 @@ pub mod shader {
     impl ShaderProgram {
         //TODO: Maybe take an array of programs ?
         //Probably should enforce a vertex and fragment shader
-        pub fn new(vertex : &Shader, fragment : &Shader) -> ShaderProgram {
+        pub fn new(vertex : &Shader, fragment : &Shader) -> Result<ShaderProgram, Error> {
             let program = unsafe {gl::CreateProgram()};
             assert!(program != 0, " Couldn't create opengl program. Why idk");
 
@@ -277,10 +290,14 @@ pub mod shader {
                 get_error().unwrap();
                 gl::LinkProgram(program);
                 get_error().unwrap();
-                //TODO check linking success
             }
-
-            ShaderProgram(program)
+            let mut success = 0;
+            unsafe {gl::GetProgramiv(program, gl::LINK_STATUS, &mut success)};
+            get_error().unwrap();
+            if success != 1 {
+                return Err(Error::program_error(program));
+            }
+            Ok(ShaderProgram(program))
         }
         pub fn use_program(&self) {
             unsafe {gl::UseProgram(self.0)};

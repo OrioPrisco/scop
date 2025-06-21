@@ -65,7 +65,7 @@ fn main() {
     let vertex_shader_id = Shader::new(vertex_shader, gl::VERTEX_SHADER).unwrap();
     let fragment_shader_id = Shader::new(fragment_shader, gl::FRAGMENT_SHADER).unwrap();
 
-    let shader_program = ShaderProgram::new(&vertex_shader_id, &fragment_shader_id);
+    let shader_program = ShaderProgram::new(&vertex_shader_id, &fragment_shader_id).unwrap();
     //TODO delete shaders
 
     while !window.should_close() {
