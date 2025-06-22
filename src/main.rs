@@ -87,12 +87,13 @@ fn main() {
             gl::ClearColor(0.2, 0.3, 0.3, 1.0); //safe
             gl::Clear(gl::COLOR_BUFFER_BIT); //can error on bad bit passed
 
-            shader_program.use_program();
-            let bound_vao = BoundVao::new(&mut vao, context);
             //gl::PolygonMode(gl::FRONT_AND_BACK, gl::LINE);
-            gl::DrawElements(gl::TRIANGLES, 6, gl::UNSIGNED_INT, ptr::null());
-            context = bound_vao.unbind();
         };
+
+        shader_program.use_program();
+        let bound_vao = BoundVao::new(&mut vao, context);
+        bound_vao.draw_elements();
+        context = bound_vao.unbind();
 
         window.swap_buffers();
         glfw.poll_events();

@@ -157,6 +157,28 @@ pub mod vao {
             unsafe { gl::BindVertexArray(0) };
             self.ctx
         }
+        pub fn draw_triangles(&self) {
+            assert!(self.vao.vbo.is_some());
+            assert!(self.vao.vbo.unwrap().borrow().vertices().is_some());
+            let verts = self.vao.vbo.unwrap().borrow().len().unwrap() / 3;
+            unsafe { gl::DrawArrays(gl::TRIANGLES, 0, verts as i32) }
+        }
+        pub fn draw_elements(&self) {
+            let vbo = self.vao.vbo.unwrap().borrow();
+            let ebo = self.vao.ebo.unwrap().borrow();
+            let vertices = vbo.vertices().unwrap();
+            let indices = ebo.indices().unwrap();
+            assert!(ebo.max_index() as usize <= vertices.len() / 3);
+            unsafe {
+                gl::DrawElements(
+                    gl::TRIANGLES,
+                    indices.len() as i32,
+                    gl::UNSIGNED_INT,
+                    ptr::null(),
+                )
+            };
+            get_error().unwrap()
+        }
     }
 }
 
@@ -179,6 +201,12 @@ pub mod vbo {
             unsafe { gl::GenBuffers(1, &mut vbo.handle) };
             get_error()?;
             Ok(vbo)
+        }
+        pub fn len(&self) -> Option<usize> {
+            self.vertices.map(|s| s.len())
+        }
+        pub fn vertices(&self) -> Option<&'vert [f32]> {
+            self.vertices
         }
         pub unsafe fn raw(&self) -> u32 {
             self.handle
@@ -267,6 +295,12 @@ pub mod ebo {
             };
             get_error()?;
             Ok(ebo)
+        }
+        pub fn indices(&self) -> Option<&'ind [u32]> {
+            self.indices
+        }
+        pub fn max_index(&self) -> u32 {
+            self.max_index
         }
         pub unsafe fn raw(&self) -> u32 {
             self.handle
