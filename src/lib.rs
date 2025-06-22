@@ -68,27 +68,30 @@ pub fn get_error() -> GLResult<()> {
 }
 
 type VboRef<'vbo, 'vert> = &'vbo RefCell<vbo::Vbo<'vert>>;
+type EboRef<'ebo, 'ind> = &'ebo RefCell<ebo::Ebo<'ind>>;
 
 pub mod vao {
 
     use super::*;
     use vbo::{self, InternalBoundVbo};
+    use ebo::{self, InternalBoundEbo};
 
     //TODO:impl Drop
-    pub struct Vao<'vbo, 'vert> {
+    pub struct Vao<'vbo, 'vert, 'ebo, 'ind> {
         handle : GLuint,
         vbo : Option<VboRef<'vbo, 'vert>>,
+        ebo : Option<EboRef<'ebo, 'ind>>,
     }
 
     //The currently bound VAO
-    pub struct BoundVao<'vao,'vbo, 'vert> {
-        vao : &'vao mut Vao<'vbo, 'vert>,
+    pub struct BoundVao<'vao,'vbo, 'vert, 'ebo, 'ind> {
+        vao : &'vao mut Vao<'vbo, 'vert, 'ebo, 'ind>,
         ctx : Context,
     }
 
-    impl<'vbo, 'vert> Vao<'vbo, 'vert> {
-        pub fn new() -> GLResult<Vao<'vbo, 'vert>> {
-            let mut vao  = Vao {handle: 0, vbo: None};
+    impl<'vbo, 'vert, 'ebo, 'ind> Vao<'vbo, 'vert, 'ebo, 'ind> {
+        pub fn new() -> GLResult<Vao<'vbo, 'vert, 'ebo, 'ind>> {
+            let mut vao  = Vao {handle: 0, vbo: None, ebo: None};
             unsafe { gl::GenVertexArrays(1, &mut vao.handle); };
             get_error()?;
             Ok(vao)
@@ -98,8 +101,8 @@ pub mod vao {
         }
     }
 
-    impl<'vao,'vbo, 'vert> BoundVao<'vao,'vbo, 'vert> {
-        pub fn new(vao : &'vao mut Vao<'vbo, 'vert>, ctx : Context) -> BoundVao<'vao,'vbo, 'vert> {
+    impl<'vao,'vbo, 'vert, 'ebo, 'ind> BoundVao<'vao,'vbo, 'vert, 'ebo, 'ind> {
+        pub fn new(vao : &'vao mut Vao<'vbo, 'vert, 'ebo, 'ind>, ctx : Context) -> BoundVao<'vao,'vbo, 'vert, 'ebo, 'ind> {
             unsafe { gl::BindVertexArray(vao.handle)};
             get_error().unwrap();
             BoundVao{
@@ -122,8 +125,21 @@ pub mod vao {
             self.vao.vbo.take();
             unsafe { gl::BindBuffer(gl::ARRAY_BUFFER, 0)};
         }
-        pub fn get_bind(&self) -> Option<InternalBoundVbo<'vbo, 'vert>> {
+        pub fn get_vbo(&self) -> Option<InternalBoundVbo<'vbo, 'vert>> {
             self.vao.vbo.map(|vbo| InternalBoundVbo::new(vbo))
+        }
+        pub fn bind_ebo(&mut self, ebo : EboRef<'ebo, 'ind>) {
+            self.vao.ebo.replace(ebo);
+            unsafe {
+                gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, ebo.borrow().raw());
+            };
+        }
+        pub fn unbind_ebo(&mut self) {
+            self.vao.ebo.take();
+            unsafe { gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, 0)};
+        }
+        pub fn get_ebo(&self) -> Option<InternalBoundEbo<'ebo, 'ind>> {
+            self.vao.ebo.map(|ebo| InternalBoundEbo::new(ebo))
         }
         pub fn unbind(self) -> Context {
             unsafe {gl::BindVertexArray(0)};
@@ -207,6 +223,87 @@ pub mod vbo {
     }
     impl<'vbo,'vert> std::ops::DerefMut for BoundVbo<'vbo,'vert> {
        fn deref_mut(&mut self) -> &mut Self::Target { &mut self.vbo }
+    }
+}
+
+pub mod ebo {
+
+    use super::*;
+
+    //TODO:impl Drop
+    pub struct Ebo<'ind> {
+        pub(crate) handle : GLuint,
+        indices : Option<&'ind[u32]>,
+        max_index : u32,
+    }
+
+    impl<'ind> Ebo<'ind> {
+        pub fn new() -> GLResult<Ebo<'ind>> {
+            let mut ebo  = Ebo {
+                handle: 0,
+                indices: None,
+                max_index: 0,
+            };
+            unsafe { gl::GenBuffers(1, &mut ebo.handle); };
+            get_error()?;
+            Ok(ebo)
+        }
+        pub unsafe fn raw(&self) -> u32 {
+            self.handle
+        }
+    }
+
+    pub struct InternalBoundEbo<'ebo, 'ind> {
+        pub(crate) ebo: EboRef<'ebo, 'ind>,
+    }
+
+    impl<'ebo, 'ind> InternalBoundEbo<'ebo, 'ind> {
+        pub(crate) fn new(ebo : EboRef<'ebo, 'ind>) -> InternalBoundEbo<'ebo, 'ind> {
+            InternalBoundEbo{ebo}
+        }
+        pub unsafe fn raw(&self) -> GLuint {
+            unsafe { self.ebo.borrow().raw() }
+        }
+        pub fn bind_data<'a>(&'a mut self, indices : &'ind[u32]) {
+            self.ebo.borrow_mut().indices.replace(indices);
+            self.ebo.borrow_mut().max_index = *indices.iter().max().unwrap_or(&0);
+            unsafe { gl::NamedBufferData(
+                self.ebo.borrow().handle,
+                (indices.len() * mem::size_of::<u32>()) as isize,
+                indices.as_ptr() as *const c_void,
+                gl::STATIC_DRAW,
+            )};
+            get_error().unwrap();
+        }
+    }
+
+    //The currently bound EBO
+    pub struct BoundEbo<'ebo, 'ind> {
+        ebo : InternalBoundEbo<'ebo, 'ind>,
+        ctx: Context,
+    }
+
+    impl<'ebo, 'ind> BoundEbo<'ebo, 'ind> {
+        pub fn new(ebo : EboRef<'ebo, 'ind>, ctx : Context) -> BoundEbo<'ebo, 'ind> {
+            unsafe { gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, ebo.borrow().raw())};
+            get_error().unwrap();
+            BoundEbo{
+                ebo: InternalBoundEbo::new(ebo),
+                ctx,
+            }
+        }
+        pub fn unbind(self) -> Context {
+            unsafe {gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, 0)};
+            self.ctx
+        }
+    }
+    impl<'ebo,'ind> std::ops::Deref for BoundEbo<'ebo,'ind> {
+        type Target = InternalBoundEbo<'ebo,'ind>;
+
+       fn deref(&self) -> &Self::Target { &self.ebo }
+    }
+    impl<'ebo,'ind> std::ops::DerefMut for BoundEbo<'ebo,'ind> {
+       fn deref_mut(&mut self) -> &mut Self::Target { &mut self.ebo }
     }
 }
 

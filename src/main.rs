@@ -59,7 +59,7 @@ fn main() {
     let mut bound_vao = BoundVao::new(&mut vao, context);
     bound_vao.bind_vbo(&vbo);
 
-    bound_vao.get_bind().unwrap().bind_data(&vertices);
+    bound_vao.get_vbo().unwrap().bind_data(&vertices);
     context = bound_vao.unbind();
 
     let vertex_shader_id = Shader::new(vertex_shader, gl::VERTEX_SHADER).unwrap();
