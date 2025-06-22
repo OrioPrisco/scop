@@ -8,11 +8,21 @@ use std::ptr;
 use scop::shader::{Shader, ShaderProgram};
 use scop::vao::{BoundVao, Vao};
 use scop::vbo::Vbo;
+use scop::ebo::Ebo;
 
 const SCR_WIDTH: u32 = 800;
 const SCR_HEIGHT: u32 = 600;
 
-const vertices: [f32; 9] = [-0.5, -0.5, 0.0, 0.5, -0.5, 0.0, 0.0, 0.5, 0.0];
+const vertices: [f32; 12] = [
+     0.5,  0.5, 0.0,
+     0.5, -0.5, 0.0,
+    -0.5, -0.5, 0.0,
+    -0.5,  0.5, 0.0,
+];
+const indices: [u32; 6] = [
+    0, 1, 3,
+    1, 2, 3,
+];
 
 const vertex_shader: &CStr = c"
 #version 330 core
@@ -54,11 +64,14 @@ fn main() {
 
     let mut vao = Vao::new().unwrap();
     let vbo = RefCell::new(Vbo::new().unwrap());
+    let ebo = RefCell::new(Ebo::new().unwrap());
 
     let mut bound_vao = BoundVao::new(&mut vao, context);
     bound_vao.bind_vbo(&vbo);
+    bound_vao.bind_ebo(&ebo);
 
     bound_vao.get_vbo().unwrap().bind_data(&vertices);
+    bound_vao.get_ebo().unwrap().bind_data(&indices);
     context = bound_vao.unbind();
 
     let vertex_shader_id = Shader::new(vertex_shader, gl::VERTEX_SHADER).unwrap();
@@ -76,7 +89,8 @@ fn main() {
 
             shader_program.use_program();
             let bound_vao = BoundVao::new(&mut vao, context);
-            gl::DrawArrays(gl::TRIANGLES, 0, 3);
+            //gl::PolygonMode(gl::FRONT_AND_BACK, gl::LINE);
+            gl::DrawElements(gl::TRIANGLES, 6, gl::UNSIGNED_INT, ptr::null());
             context = bound_vao.unbind();
         };
 
