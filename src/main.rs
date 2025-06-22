@@ -1,24 +1,20 @@
-use glfw::{Context, GlfwReceiver, Action, Key};
-use std::ptr;
-use std::mem;
-use std::ffi::c_void;
-use std::ffi::CStr;
+use glfw::{Action, Context, GlfwReceiver, Key};
 use std::cell::RefCell;
+use std::ffi::CStr;
+use std::ffi::c_void;
+use std::mem;
+use std::ptr;
 
-use scop::vao::{Vao, BoundVao};
-use scop::vbo::{Vbo, BoundVbo};
 use scop::shader::{Shader, ShaderProgram};
+use scop::vao::{BoundVao, Vao};
+use scop::vbo::Vbo;
 
-const SCR_WIDTH : u32 = 800;
-const SCR_HEIGHT : u32 = 600;
+const SCR_WIDTH: u32 = 800;
+const SCR_HEIGHT: u32 = 600;
 
-const vertices : [f32;9] = [
-    -0.5, -0.5, 0.0,
-     0.5, -0.5, 0.0,
-     0.0, 0.5, 0.0,
-];
+const vertices: [f32; 9] = [-0.5, -0.5, 0.0, 0.5, -0.5, 0.0, 0.0, 0.5, 0.0];
 
-const vertex_shader : &CStr = c"
+const vertex_shader: &CStr = c"
 #version 330 core
 layout (location = 0) in vec3 aPos;
 
@@ -27,7 +23,7 @@ void main()
     gl_Position = vec4(aPos.x, aPos.y, aPos.z, 1.0);
 }";
 
-const fragment_shader : &CStr = c"
+const fragment_shader: &CStr = c"
 #version 330 core
 out vec4 FragColor;
 
@@ -39,10 +35,13 @@ void main()
 fn main() {
     use glfw::fail_on_errors;
     let mut glfw = glfw::init(fail_on_errors!()).unwrap();
-    glfw.window_hint(glfw::WindowHint::ContextVersion(3,3));
-    glfw.window_hint(glfw::WindowHint::OpenGlProfile(glfw::OpenGlProfileHint::Core));
+    glfw.window_hint(glfw::WindowHint::ContextVersion(3, 3));
+    glfw.window_hint(glfw::WindowHint::OpenGlProfile(
+        glfw::OpenGlProfileHint::Core,
+    ));
 
-    let (mut window, events) = glfw.create_window(SCR_WIDTH, SCR_HEIGHT, "scop", glfw::WindowMode::Windowed)
+    let (mut window, events) = glfw
+        .create_window(SCR_WIDTH, SCR_HEIGHT, "scop", glfw::WindowMode::Windowed)
         .expect("Failed to create GLFW Window");
 
     window.make_current();
@@ -72,8 +71,8 @@ fn main() {
         process_events(&mut window, &events);
 
         unsafe {
-            gl::ClearColor(0.2, 0.3, 0.3, 1.0);//safe
-            gl::Clear(gl::COLOR_BUFFER_BIT);//can error on bad bit passed
+            gl::ClearColor(0.2, 0.3, 0.3, 1.0); //safe
+            gl::Clear(gl::COLOR_BUFFER_BIT); //can error on bad bit passed
 
             shader_program.use_program();
             let bound_vao = BoundVao::new(&mut vao, context);
@@ -86,14 +85,16 @@ fn main() {
     }
 }
 
-fn process_events(window : &mut glfw::Window, events : &GlfwReceiver<(f64, glfw::WindowEvent)>) {
+fn process_events(window: &mut glfw::Window, events: &GlfwReceiver<(f64, glfw::WindowEvent)>) {
     for (_, event) in glfw::flush_messages(events) {
         match event {
             glfw::WindowEvent::FramebufferSize(width, height) => {
-                unsafe { gl::Viewport(0, 0, width, height)};
-            },
-            glfw::WindowEvent::Key(Key::Escape, _, Action::Press, _) => window.set_should_close(true),
-            _ => {},
+                unsafe { gl::Viewport(0, 0, width, height) };
+            }
+            glfw::WindowEvent::Key(Key::Escape, _, Action::Press, _) => {
+                window.set_should_close(true)
+            }
+            _ => {}
         }
     }
 }
