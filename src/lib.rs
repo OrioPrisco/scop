@@ -127,10 +127,19 @@ pub mod vao {
                     3,
                     gl::FLOAT,
                     gl::FALSE,
-                    3 * mem::size_of::<f32>() as i32,
+                    6 * mem::size_of::<f32>() as i32,
                     ptr::null() as *const c_void,
                 );
+                gl::VertexAttribPointer(
+                    1,
+                    3,
+                    gl::FLOAT,
+                    gl::FALSE,
+                    6 * mem::size_of::<f32>() as i32,
+                    (mem::size_of::<f32>() * 3) as *const c_void,
+                );
                 gl::EnableVertexAttribArray(0);
+                gl::EnableVertexAttribArray(1);
             };
         }
         pub fn unbind_vbo(&mut self) {
@@ -168,7 +177,7 @@ pub mod vao {
             let ebo = self.vao.ebo.unwrap().borrow();
             let vertices = vbo.vertices().unwrap();
             let indices = ebo.indices().unwrap();
-            assert!(ebo.max_index() as usize <= vertices.len() / 3);
+            assert!(ebo.max_index() as usize <= vertices.len() / (3 * 2) );
             unsafe {
                 gl::DrawElements(
                     gl::TRIANGLES,
