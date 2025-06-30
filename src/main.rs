@@ -52,8 +52,8 @@ fn main() {
     bound_vao.bind_vbo(&vbo);
     bound_vao.bind_ebo(&ebo);
 
-    bound_vao.get_vbo().unwrap().bind_data(&vertices);
-    bound_vao.get_ebo().unwrap().bind_data(&indices);
+    vbo.borrow_mut().bind_data(&vertices);
+    ebo.borrow_mut().bind_data(&indices);
     context = bound_vao.unbind();
 
     let vertex_shader_id = Shader::from_path("./src/vertex.glsl", gl::VERTEX_SHADER).unwrap();
