@@ -369,11 +369,13 @@ pub mod ebo {
 
 pub mod shader {
     use super::*;
+    use std::io::Error as IOError;
 
     #[derive(Debug)]
     pub enum Error {
         Shader(String),
         Program(String),
+        IO(IOError),
     }
 
     impl Display for Error {
@@ -381,6 +383,7 @@ pub mod shader {
             match self {
                 Error::Shader(error) => write!(f, "{}", error),
                 Error::Program(error) => write!(f, "{}", error),
+                Error::IO(error) => write!(f, "{}", error),
             }
         }
     }
@@ -420,6 +423,11 @@ pub mod shader {
             Error::Program(String::from_utf8(buffer).unwrap())
         }
     }
+    impl From<IOError> for Error {
+        fn from(error : std::io::Error) -> Self {
+            Self::IO(error)
+        }
+    }
 
     pub struct Shader(GLuint);
 
@@ -441,6 +449,16 @@ pub mod shader {
                 return Err(Error::shader_error(shader));
             }
             Ok(Shader(shader))
+        }
+        pub fn from_path(path : &str, shader_type: GLuint) -> Result<Shader, Error> {
+            use std::fs::File;
+            use std::ffi::CString;
+            use std::io::Read;
+            let mut file = File::open(path)?;
+            let mut content : Vec<u8> = Vec::new();
+            file.read_to_end(&mut content)?;
+            let content = unsafe {CString::from_vec_unchecked(content)}; // if you put null bytes in your files: skill issue
+            Self::new(&content, shader_type)
         }
         pub unsafe fn raw(&self) -> GLuint {
             self.0

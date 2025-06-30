@@ -24,24 +24,6 @@ const indices: [u32; 6] = [
     1, 2, 3,
 ];
 
-const vertex_shader: &CStr = c"
-#version 330 core
-layout (location = 0) in vec3 aPos;
-
-void main()
-{
-    gl_Position = vec4(aPos.x, aPos.y, aPos.z, 1.0);
-}";
-
-const fragment_shader: &CStr = c"
-#version 330 core
-out vec4 FragColor;
-
-void main()
-{
-    FragColor = vec4(1.0f, 0.5f, 0.2f, 1.0f);
-}";
-
 fn main() {
     use glfw::fail_on_errors;
     let mut glfw = glfw::init(fail_on_errors!()).unwrap();
@@ -74,8 +56,8 @@ fn main() {
     bound_vao.get_ebo().unwrap().bind_data(&indices);
     context = bound_vao.unbind();
 
-    let vertex_shader_id = Shader::new(vertex_shader, gl::VERTEX_SHADER).unwrap();
-    let fragment_shader_id = Shader::new(fragment_shader, gl::FRAGMENT_SHADER).unwrap();
+    let vertex_shader_id = Shader::from_path("./src/vertex.glsl", gl::VERTEX_SHADER).unwrap();
+    let fragment_shader_id = Shader::from_path("./src/fragment.glsl", gl::FRAGMENT_SHADER).unwrap();
 
     let shader_program = ShaderProgram::new(&vertex_shader_id, &fragment_shader_id).unwrap();
     //TODO delete shaders
