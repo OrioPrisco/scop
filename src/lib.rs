@@ -177,7 +177,7 @@ pub mod vao {
             let ebo = self.vao.ebo.unwrap().borrow();
             let vertices = vbo.vertices().unwrap();
             let indices = ebo.indices().unwrap();
-            assert!(ebo.max_index() as usize <= vertices.len() / (3 * 2) );
+            assert!(ebo.max_index() as usize <= vertices.len() / (3 * 2));
             unsafe {
                 gl::DrawElements(
                     gl::TRIANGLES,
@@ -433,7 +433,7 @@ pub mod shader {
         }
     }
     impl From<IOError> for Error {
-        fn from(error : std::io::Error) -> Self {
+        fn from(error: std::io::Error) -> Self {
             Self::IO(error)
         }
     }
@@ -459,14 +459,14 @@ pub mod shader {
             }
             Ok(Shader(shader))
         }
-        pub fn from_path(path : &str, shader_type: GLuint) -> Result<Shader, Error> {
-            use std::fs::File;
+        pub fn from_path(path: &str, shader_type: GLuint) -> Result<Shader, Error> {
             use std::ffi::CString;
+            use std::fs::File;
             use std::io::Read;
             let mut file = File::open(path)?;
-            let mut content : Vec<u8> = Vec::new();
+            let mut content: Vec<u8> = Vec::new();
             file.read_to_end(&mut content)?;
-            let content = unsafe {CString::from_vec_unchecked(content)}; // if you put null bytes in your files: skill issue
+            let content = unsafe { CString::from_vec_unchecked(content) }; // if you put null bytes in your files: skill issue
             Self::new(&content, shader_type)
         }
         pub unsafe fn raw(&self) -> GLuint {

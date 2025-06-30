@@ -72,13 +72,13 @@ fn main() {
             //gl::PolygonMode(gl::FRONT_AND_BACK, gl::LINE);
         };
 
-
         let time_value = glfw.get_time() as f32;
         let green_value = time_value.sin() / 2.0 + 0.5;
         let our_color = c"ourColor";
-        let vertex_color_location = unsafe {gl::GetUniformLocation(shader_program.raw(), our_color.as_ptr())};
+        let vertex_color_location =
+            unsafe { gl::GetUniformLocation(shader_program.raw(), our_color.as_ptr()) };
         shader_program.use_program();
-        unsafe {gl::Uniform4f(vertex_color_location, 0.0, green_value, 0.0, 1.0)};
+        unsafe { gl::Uniform4f(vertex_color_location, 0.0, green_value, 0.0, 1.0) };
         let bound_vao = BoundVao::new(&mut vao, context);
         bound_vao.draw_elements();
         context = bound_vao.unbind();
