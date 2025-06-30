@@ -502,6 +502,17 @@ pub mod shader {
         pub fn use_program(&self) {
             unsafe { gl::UseProgram(self.0) };
         }
+        //TODO Put this on a BoundPrgram created with a ProgramContext
+        pub unsafe fn set4f(&self, name : &CStr, x: f32, y: f32, z: f32, w: f32) -> Option<()> {
+            let location = unsafe { gl::GetUniformLocation(self.raw(), name.as_ptr()) };
+            get_error().unwrap();
+            if location == -1 {
+                return None;
+            }
+            unsafe { gl::Uniform4f(location, x, y, z, w) };
+            get_error().unwrap();
+            Some(())
+        }
         pub unsafe fn raw(&self) -> GLuint {
             self.0
         }
