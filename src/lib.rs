@@ -493,5 +493,8 @@ pub mod shader {
         pub fn use_program(&self) {
             unsafe { gl::UseProgram(self.0) };
         }
+        pub unsafe fn raw(&self) -> GLuint {
+            self.0
+        }
     }
 }
