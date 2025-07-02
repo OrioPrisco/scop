@@ -136,8 +136,8 @@ pub mod vao {
                     6 * mem::size_of::<f32>() as i32,
                     (mem::size_of::<f32>() * 3) as *const c_void,
                 );
-                gl::EnableVertexAttribArray(0);
-                gl::EnableVertexAttribArray(1);
+                gl::EnableVertexArrayAttrib(self.raw(), 0);
+                gl::EnableVertexArrayAttrib(self.raw(), 1);
             };
         }
         pub fn unbind_vbo(&mut self) {
