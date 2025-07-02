@@ -17,7 +17,7 @@ impl Context {
     }
 }
 
-const ELEMS_PER_VERTEX : usize = 3 + 3 + 2; //pos color texture
+const ELEMS_PER_VERTEX: usize = 3 + 3 + 2; //pos color texture
 
 #[derive(Debug)]
 pub enum GLError {
@@ -420,7 +420,7 @@ pub mod shader {
             unsafe { gl::UseProgram(self.0) };
         }
         //TODO Put this on a BoundPrgram created with a ProgramContext
-        pub unsafe fn set4f(&self, name : &CStr, x: f32, y: f32, z: f32, w: f32) -> Option<()> {
+        pub unsafe fn set4f(&self, name: &CStr, x: f32, y: f32, z: f32, w: f32) -> Option<()> {
             let location = unsafe { gl::GetUniformLocation(self.raw(), name.as_ptr()) };
             get_error().unwrap();
             if location == -1 {
@@ -430,7 +430,7 @@ pub mod shader {
             get_error().unwrap();
             Some(())
         }
-        pub unsafe fn set1i(&self, name : &CStr, texture : GLint) -> Option<()> {
+        pub unsafe fn set1i(&self, name: &CStr, texture: GLint) -> Option<()> {
             let location = unsafe { gl::GetUniformLocation(self.raw(), name.as_ptr()) };
             get_error().unwrap();
             if location == -1 {
