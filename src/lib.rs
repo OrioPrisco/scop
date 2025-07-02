@@ -17,6 +17,8 @@ impl Context {
     }
 }
 
+const ELEMS_PER_VERTEX : usize = 3 + 3 + 2; //pos color texture
+
 #[derive(Debug)]
 pub enum GLError {
     InvalidEnum,
@@ -125,7 +127,7 @@ pub mod vao {
                     3,
                     gl::FLOAT,
                     gl::FALSE,
-                    6 * mem::size_of::<f32>() as i32,
+                    (ELEMS_PER_VERTEX * mem::size_of::<f32>()) as i32,
                     ptr::null() as *const c_void,
                 );
                 gl::VertexAttribPointer(
@@ -133,11 +135,20 @@ pub mod vao {
                     3,
                     gl::FLOAT,
                     gl::FALSE,
-                    6 * mem::size_of::<f32>() as i32,
+                    (ELEMS_PER_VERTEX * mem::size_of::<f32>()) as i32,
                     (mem::size_of::<f32>() * 3) as *const c_void,
+                );
+                gl::VertexAttribPointer(
+                    2,
+                    2,
+                    gl::FLOAT,
+                    gl::FALSE,
+                    (ELEMS_PER_VERTEX * mem::size_of::<f32>()) as i32,
+                    (mem::size_of::<f32>() * 6) as *const c_void,
                 );
                 gl::EnableVertexArrayAttrib(self.raw(), 0);
                 gl::EnableVertexArrayAttrib(self.raw(), 1);
+                gl::EnableVertexArrayAttrib(self.raw(), 2);
             };
         }
         pub fn unbind_vbo(&mut self) {
@@ -175,7 +186,7 @@ pub mod vao {
             let ebo = self.vao.ebo.unwrap().borrow();
             let vertices = vbo.vertices().unwrap();
             let indices = ebo.indices().unwrap();
-            assert!(ebo.max_index() as usize <= vertices.len() / (3 * 2));
+            assert!(ebo.max_index() as usize <= vertices.len() / (ELEMS_PER_VERTEX));
             unsafe {
                 gl::DrawElements(
                     gl::TRIANGLES,
@@ -416,6 +427,16 @@ pub mod shader {
                 return None;
             }
             unsafe { gl::Uniform4f(location, x, y, z, w) };
+            get_error().unwrap();
+            Some(())
+        }
+        pub unsafe fn set1i(&self, name : &CStr, texture : GLint) -> Option<()> {
+            let location = unsafe { gl::GetUniformLocation(self.raw(), name.as_ptr()) };
+            get_error().unwrap();
+            if location == -1 {
+                return None;
+            }
+            unsafe { gl::Uniform1i(location, texture) };
             get_error().unwrap();
             Some(())
         }

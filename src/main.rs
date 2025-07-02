@@ -14,10 +14,11 @@ const SCR_WIDTH: u32 = 800;
 const SCR_HEIGHT: u32 = 600;
 
 const vertices: &[f32] = &[
-     0.5,  0.5, 0.0,  1.0, 0.0, 0.0,
-     0.5, -0.5, 0.0,  0.0, 1.0, 0.0,
-    -0.5, -0.5, 0.0,  0.0, 0.0, 1.0,
-    -0.5,  0.5, 0.0,  1.0, 1.0, 1.0,
+     //positions      //colors        //texture coords
+     0.5,  0.5, 0.0,  1.0, 0.0, 0.0,  1.0, 0.0,
+     0.5, -0.5, 0.0,  0.0, 1.0, 0.0,  1.0, 1.0,
+    -0.5, -0.5, 0.0,  0.0, 0.0, 1.0,  0.0, 1.0,
+    -0.5,  0.5, 0.0,  1.0, 1.0, 1.0,  0.0, 0.0,
 ];
 const indices: [u32; 6] = [
     0, 1, 3,
@@ -61,6 +62,33 @@ fn main() {
 
     let shader_program = ShaderProgram::new(&vertex_shader_id, &fragment_shader_id).unwrap();
     //TODO delete shaders
+    let mut texture = 0;
+    unsafe {
+        gl::GenTextures(1, &mut texture);
+        gl::ActiveTexture(gl::TEXTURE0);
+        gl::BindTexture(gl::TEXTURE_2D, texture);
+
+        gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_WRAP_S, gl::REPEAT as i32);
+        gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_WRAP_T, gl::REPEAT as i32);
+
+        gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_MIN_FILTER, gl::LINEAR as i32);
+        gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_MAG_FILTER, gl::LINEAR as i32);
+
+        let img = image::ImageReader::open("img/test.png").expect("Cannot find texture").decode().expect("Cannot load texture");
+        let img = match img {
+            image::DynamicImage::ImageRgba8(img) => img,
+            image => image.to_rgba8(),
+        };
+        let dim = img.dimensions();
+        let pixels = img.into_vec();
+        gl::TexImage2D(gl::TEXTURE_2D, 0, gl::RGBA as i32, dim.0 as i32, dim.1 as i32, 0, gl::RGBA, gl::UNSIGNED_BYTE, &pixels[0] as *const u8 as *const c_void);
+
+        gl::GenerateMipmap(gl::TEXTURE_2D);
+        while let Err(error) = scop::get_error() {
+            println!("{}", error);
+        }
+        drop(pixels);
+    }
 
     while !window.should_close() {
         process_events(&mut window, &events);
@@ -76,6 +104,7 @@ fn main() {
         let green_value = time_value.sin() / 2.0 + 0.5;
         shader_program.use_program();
         //unsafe {shader_program.set4f(c"our_color", 0.0, green_value, 0.0, 1.0)}.unwrap();
+        unsafe { shader_program.set1i(c"ourTexture", texture as i32)};
         let bound_vao = BoundVao::new(&mut vao, context);
         bound_vao.draw_elements();
         context = bound_vao.unbind();
