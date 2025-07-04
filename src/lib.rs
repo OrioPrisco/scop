@@ -419,15 +419,23 @@ pub mod shader {
             get_error().unwrap();
             Some(())
         }
-        pub unsafe fn set1i(&self, name: &CStr, texture: GLint) -> Option<()> {
+        pub unsafe fn set1i(&self, name: &CStr, int: GLint) -> Option<()> {
             let location = unsafe { gl::GetUniformLocation(self.raw(), name.as_ptr()) };
             get_error().unwrap();
             if location == -1 {
                 return None;
             }
-            unsafe { gl::Uniform1i(location, texture) };
+            unsafe { gl::Uniform1i(location, int) };
             get_error().unwrap();
             Some(())
+        }
+        //TODO: ensure texture outlives Program
+        pub unsafe fn set_texture(
+            &self,
+            name: &CStr,
+            texture: &texture::BoundTexture,
+        ) -> Option<()> {
+            unsafe { self.set1i(name, texture.context.number as i32) }
         }
         pub unsafe fn raw(&self) -> GLuint {
             self.0
@@ -440,7 +448,7 @@ pub mod texture {
 
     #[derive(Debug)]
     pub struct Context {
-        number: GLuint,
+        pub(crate) number: GLuint,
     }
     pub struct ActiveContext {
         current: GLuint,
@@ -451,7 +459,7 @@ pub mod texture {
         handle: GLuint,
     }
     pub struct BoundTexture<'ctx, 'tex> {
-        context: &'ctx mut Context,
+        pub(crate) context: &'ctx mut Context,
         _texture: &'tex Texture,
     }
 

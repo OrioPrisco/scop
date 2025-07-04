@@ -96,8 +96,8 @@ fn main() {
         let green_value = time_value.sin() / 2.0 + 0.5;
         shader_program.use_program();
         //unsafe {shader_program.set4f(c"our_color", 0.0, green_value, 0.0, 1.0)}.unwrap();
-        unsafe { shader_program.set1i(c"texture1", 0) };
-        unsafe { shader_program.set1i(c"texture2", 1) };
+        unsafe { shader_program.set_texture(c"texture1", &bound_text) };
+        unsafe { shader_program.set_texture(c"texture2", &bound_text2) };
         let bound_vao = BoundVao::new(&mut vao, context);
         bound_vao.draw_elements();
         context = bound_vao.unbind();
