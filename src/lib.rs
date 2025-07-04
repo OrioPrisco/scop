@@ -68,28 +68,28 @@ pub fn get_error() -> GLResult<()> {
     }
 }
 
-type VboRef<'vbo, 'vert> = &'vbo RefCell<vbo::Vbo<'vert>>;
-type EboRef<'ebo, 'ind> = &'ebo RefCell<ebo::Ebo<'ind>>;
+type VboRef<'vbo> = &'vbo RefCell<vbo::Vbo>;
+type EboRef<'ebo> = &'ebo RefCell<ebo::Ebo>;
 
 pub mod vao {
 
     use super::*;
 
     //TODO:impl Drop
-    pub struct Vao<'vbo, 'vert, 'ebo, 'ind> {
+    pub struct Vao<'vbo, 'ebo> {
         handle: GLuint,
-        vbo: Option<VboRef<'vbo, 'vert>>,
-        ebo: Option<EboRef<'ebo, 'ind>>,
+        vbo: Option<VboRef<'vbo>>,
+        ebo: Option<EboRef<'ebo>>,
     }
 
     //The currently bound VAO
-    pub struct BoundVao<'vao, 'vbo, 'vert, 'ebo, 'ind> {
-        vao: &'vao mut Vao<'vbo, 'vert, 'ebo, 'ind>,
+    pub struct BoundVao<'vao, 'vbo, 'ebo> {
+        vao: &'vao mut Vao<'vbo, 'ebo>,
         ctx: Context,
     }
 
-    impl<'vbo, 'vert, 'ebo, 'ind> Vao<'vbo, 'vert, 'ebo, 'ind> {
-        pub fn new() -> GLResult<Vao<'vbo, 'vert, 'ebo, 'ind>> {
+    impl<'vbo, 'vert, 'ebo, 'ind> Vao<'vbo, 'ebo> {
+        pub fn new() -> GLResult<Vao<'vbo, 'ebo>> {
             let mut vao = Vao {
                 handle: 0,
                 vbo: None,
@@ -106,11 +106,8 @@ pub mod vao {
         }
     }
 
-    impl<'vao, 'vbo, 'vert, 'ebo, 'ind> BoundVao<'vao, 'vbo, 'vert, 'ebo, 'ind> {
-        pub fn new(
-            vao: &'vao mut Vao<'vbo, 'vert, 'ebo, 'ind>,
-            ctx: Context,
-        ) -> BoundVao<'vao, 'vbo, 'vert, 'ebo, 'ind> {
+    impl<'vao, 'vbo, 'ebo> BoundVao<'vao, 'vbo, 'ebo> {
+        pub fn new(vao: &'vao mut Vao<'vbo, 'ebo>, ctx: Context) -> BoundVao<'vao, 'vbo, 'ebo> {
             unsafe { gl::BindVertexArray(vao.handle) };
             get_error().unwrap();
             BoundVao { vao, ctx }
@@ -118,7 +115,7 @@ pub mod vao {
         pub unsafe fn raw(&self) -> GLuint {
             unsafe { self.vao.raw() }
         }
-        pub fn bind_vbo(&mut self, vbo: VboRef<'vbo, 'vert>) {
+        pub fn bind_vbo(&mut self, vbo: VboRef<'vbo>) {
             self.vao.vbo.replace(vbo);
             unsafe {
                 gl::BindBuffer(gl::ARRAY_BUFFER, vbo.borrow().raw());
@@ -155,10 +152,10 @@ pub mod vao {
             self.vao.vbo.take();
             unsafe { gl::BindBuffer(gl::ARRAY_BUFFER, 0) };
         }
-        pub fn get_vbo(&self) -> Option<VboRef<'vbo, 'vert>> {
+        pub fn get_vbo(&self) -> Option<VboRef<'vbo>> {
             self.vao.vbo
         }
-        pub fn bind_ebo(&mut self, ebo: EboRef<'ebo, 'ind>) {
+        pub fn bind_ebo(&mut self, ebo: EboRef<'ebo>) {
             self.vao.ebo.replace(ebo);
             unsafe {
                 gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, ebo.borrow().raw());
@@ -168,7 +165,7 @@ pub mod vao {
             self.vao.ebo.take();
             unsafe { gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, 0) };
         }
-        pub fn get_ebo(&self) -> Option<EboRef<'ebo, 'ind>> {
+        pub fn get_ebo(&self) -> Option<EboRef<'ebo>> {
             self.vao.ebo
         }
         pub fn unbind(self) -> Context {
@@ -177,23 +174,18 @@ pub mod vao {
         }
         pub fn draw_triangles(&self) {
             assert!(self.vao.vbo.is_some());
-            assert!(self.vao.vbo.unwrap().borrow().vertices().is_some());
+            assert!(self.vao.vbo.unwrap().borrow().len().is_some());
             let verts = self.vao.vbo.unwrap().borrow().len().unwrap() / 3;
             unsafe { gl::DrawArrays(gl::TRIANGLES, 0, verts as i32) }
         }
         pub fn draw_elements(&self) {
             let vbo = self.vao.vbo.unwrap().borrow();
             let ebo = self.vao.ebo.unwrap().borrow();
-            let vertices = vbo.vertices().unwrap();
-            let indices = ebo.indices().unwrap();
-            assert!(ebo.max_index() as usize <= vertices.len() / (ELEMS_PER_VERTEX));
+            let vertices = vbo.len().unwrap();
+            let indices = ebo.length();
+            assert!(ebo.max_index() as usize <= vertices / (ELEMS_PER_VERTEX));
             unsafe {
-                gl::DrawElements(
-                    gl::TRIANGLES,
-                    indices.len() as i32,
-                    gl::UNSIGNED_INT,
-                    ptr::null(),
-                )
+                gl::DrawElements(gl::TRIANGLES, indices as i32, gl::UNSIGNED_INT, ptr::null())
             };
             get_error().unwrap()
         }
@@ -205,29 +197,26 @@ pub mod vbo {
     use super::*;
 
     //TODO:impl Drop
-    pub struct Vbo<'vert> {
+    pub struct Vbo {
         pub(crate) handle: GLuint,
-        vertices: Option<&'vert [f32]>,
+        vertices_len: Option<usize>,
     }
 
-    impl<'vert> Vbo<'vert> {
-        pub fn new() -> GLResult<Vbo<'vert>> {
+    impl Vbo {
+        pub fn new() -> GLResult<Vbo> {
             let mut vbo = Vbo {
                 handle: 0,
-                vertices: None,
+                vertices_len: None,
             };
             unsafe { gl::CreateBuffers(1, &mut vbo.handle) };
             get_error()?;
             Ok(vbo)
         }
         pub fn len(&self) -> Option<usize> {
-            self.vertices.map(|s| s.len())
+            self.vertices_len
         }
-        pub fn vertices(&self) -> Option<&'vert [f32]> {
-            self.vertices
-        }
-        pub fn bind_data<'a>(&'a mut self, vertices: &'vert [f32]) {
-            self.vertices.replace(vertices);
+        pub fn bind_data(&mut self, vertices: &[f32]) {
+            self.vertices_len.replace(vertices.len());
             unsafe {
                 gl::NamedBufferData(
                     self.raw(),
@@ -249,18 +238,18 @@ pub mod ebo {
     use super::*;
 
     //TODO:impl Drop
-    pub struct Ebo<'ind> {
+    pub struct Ebo {
         pub(crate) handle: GLuint,
-        indices: Option<&'ind [u32]>,
         max_index: u32,
+        length: usize,
     }
 
-    impl<'ind> Ebo<'ind> {
-        pub fn new() -> GLResult<Ebo<'ind>> {
+    impl Ebo {
+        pub fn new() -> GLResult<Ebo> {
             let mut ebo = Ebo {
                 handle: 0,
-                indices: None,
                 max_index: 0,
+                length: 0,
             };
             unsafe {
                 gl::CreateBuffers(1, &mut ebo.handle);
@@ -268,15 +257,15 @@ pub mod ebo {
             get_error()?;
             Ok(ebo)
         }
-        pub fn indices(&self) -> Option<&'ind [u32]> {
-            self.indices
-        }
         pub fn max_index(&self) -> u32 {
             self.max_index
         }
-        pub fn bind_data<'a>(&'a mut self, indices: &'ind [u32]) {
-            self.indices.replace(indices);
+        pub fn length(&self) -> usize {
+            self.length
+        }
+        pub fn bind_data(&mut self, indices: &[u32]) {
             self.max_index = *indices.iter().max().unwrap_or(&0);
+            self.length = indices.len();
             unsafe {
                 gl::NamedBufferData(
                     self.raw(),
