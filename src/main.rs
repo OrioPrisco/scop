@@ -75,27 +75,12 @@ fn main() {
     let bound_text = texture.bind(&mut txt_ctx_0, &mut active_texture);
     let bound_text2 = texture2.bind(&mut txt_ctx_1, &mut active_texture);
 
-    let img = image::ImageReader::open("img/test.png")
-        .expect("Cannot find texture")
-        .decode()
+    bound_text
+        .bind_data_from_path("img/test.png", &mut active_texture)
         .expect("Cannot load texture");
-    let img = match img {
-        image::DynamicImage::ImageRgba8(img) => img,
-        image => image.to_rgba8(),
-    };
-    bound_text.bind_data(&img, &mut active_texture);
-    drop(img);
-
-    let img = image::ImageReader::open("img/awesomeface.png")
-        .expect("Cannot find texture")
-        .decode()
+    bound_text2
+        .bind_data_from_path("img/awesomeface.png", &mut active_texture)
         .expect("Cannot load texture");
-    let img = match img {
-        image::DynamicImage::ImageRgba8(img) => img,
-        image => image.to_rgba8(),
-    };
-    bound_text2.bind_data(&img, &mut active_texture);
-    drop(img);
 
     while !window.should_close() {
         process_events(&mut window, &events);

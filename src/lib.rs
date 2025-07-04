@@ -526,5 +526,18 @@ pub mod texture {
             }
             get_error().unwrap();
         }
+        pub fn bind_data_from_path<'act>(
+            &self,
+            path: &str,
+            active_context: &'act mut ActiveContext,
+        ) -> image::error::ImageResult<()> {
+            let img = image::ImageReader::open(path)?.decode()?;
+            let img = match img {
+                image::DynamicImage::ImageRgba8(img) => img,
+                image => image.to_rgba8(),
+            };
+            self.bind_data(&img, active_context);
+            Ok(())
+        }
     }
 }
