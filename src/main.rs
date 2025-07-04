@@ -11,6 +11,8 @@ use scop::texture::{self, Texture};
 use scop::vao::{BoundVao, Vao};
 use scop::vbo::Vbo;
 
+pub mod math;
+
 const SCR_WIDTH: u32 = 800;
 const SCR_HEIGHT: u32 = 600;
 
