@@ -2,8 +2,12 @@ use gl::types::*;
 use std::cell::RefCell;
 use std::error::Error;
 use std::ffi::CStr;
+use std::ffi::CString;
 use std::ffi::c_void;
 use std::fmt::{self, Display};
+use std::fs::File;
+use std::io::Error as IOError;
+use std::io::Read;
 use std::mem;
 use std::ptr;
 
@@ -284,7 +288,6 @@ pub mod ebo {
 
 pub mod shader {
     use super::*;
-    use std::io::Error as IOError;
 
     #[derive(Debug)]
     pub enum Error {
@@ -366,9 +369,6 @@ pub mod shader {
             Ok(Shader(shader))
         }
         pub fn from_path(path: &str, shader_type: GLuint) -> Result<Shader, Error> {
-            use std::ffi::CString;
-            use std::fs::File;
-            use std::io::Read;
             let mut file = File::open(path)?;
             let mut content: Vec<u8> = Vec::new();
             file.read_to_end(&mut content)?;
@@ -431,6 +431,100 @@ pub mod shader {
         }
         pub unsafe fn raw(&self) -> GLuint {
             self.0
+        }
+    }
+}
+
+pub mod texture {
+    use super::*;
+
+    #[derive(Debug)]
+    pub struct Context {
+        number: GLuint,
+    }
+    pub struct ActiveContext {
+        current: GLuint,
+    }
+    //TODO : impl Drop
+    //Maybe use a bool to know wether it's initialized ?
+    pub struct Texture {
+        handle: GLuint,
+    }
+    pub struct BoundTexture<'ctx, 'tex> {
+        context: &'ctx mut Context,
+        _texture: &'tex Texture,
+    }
+
+    pub fn get_contexts() -> Vec<Context> {
+        //OpenGL guarantees at least 16 different active textures
+        //Could return the actual number of Context by querying openGL
+        (0..15).map(|i| Context { number: i }).collect()
+    }
+    pub fn get_active_context() -> ActiveContext {
+        unsafe { gl::ActiveTexture(gl::TEXTURE0) };
+        ActiveContext { current: 0 }
+    }
+    impl ActiveContext {
+        pub fn switch_to(&mut self, number: GLuint) {
+            if number == self.current {
+                return;
+            }
+            self.current = number;
+            unsafe { gl::ActiveTexture(gl::TEXTURE0 + number) };
+            get_error().unwrap();
+        }
+    }
+
+    impl Texture {
+        pub fn new() -> Self {
+            let mut handle: GLuint = 0;
+            unsafe { gl::CreateTextures(gl::TEXTURE_2D, 1, &mut handle) };
+            get_error().unwrap();
+            Texture { handle }
+        }
+        pub fn bind<'tex, 'ctx, 'act>(
+            &'tex self,
+            context: &'ctx mut Context,
+            active_context: &'act mut ActiveContext,
+        ) -> BoundTexture<'ctx, 'tex> {
+            active_context.switch_to(context.number);
+            unsafe { gl::BindTexture(gl::TEXTURE_2D, self.handle) };
+            BoundTexture {
+                _texture: self,
+                context,
+            }
+        }
+    }
+    impl<'ctx, 'tex> BoundTexture<'ctx, 'tex> {
+        pub fn bind_data<'act>(
+            &self,
+            image: &image::RgbaImage,
+            active_context: &'act mut ActiveContext,
+        ) {
+            active_context.switch_to(self.context.number);
+
+            unsafe {
+                gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_WRAP_S, gl::REPEAT as i32);
+                gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_WRAP_T, gl::REPEAT as i32);
+
+                gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_MIN_FILTER, gl::LINEAR as i32);
+                gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_MAG_FILTER, gl::LINEAR as i32);
+                let dim = image.dimensions();
+                let pixels = image.as_raw();
+                gl::TexImage2D(
+                    gl::TEXTURE_2D,
+                    0,
+                    gl::RGBA as i32,
+                    dim.0 as i32,
+                    dim.1 as i32,
+                    0,
+                    gl::RGBA,
+                    gl::UNSIGNED_BYTE,
+                    &pixels[0] as *const u8 as *const c_void,
+                );
+                gl::GenerateMipmap(gl::TEXTURE_2D);
+            }
+            get_error().unwrap();
         }
     }
 }
