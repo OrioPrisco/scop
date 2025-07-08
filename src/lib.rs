@@ -11,6 +11,8 @@ use std::io::Read;
 use std::mem;
 use std::ptr;
 
+pub mod math;
+
 pub struct Context;
 
 //Empty struct that needs to be borrwed to bind a vao/vbo
