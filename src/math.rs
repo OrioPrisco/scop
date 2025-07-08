@@ -1,4 +1,4 @@
-use std::ops::{Add, Div, Mul};
+use std::ops::{Add, Div, Index, Mul, MulAssign};
 
 pub trait Sqrt {
     fn sqrt(self) -> Self;
@@ -14,16 +14,62 @@ where
 }
 
 pub trait NumberLike:
-    Mul<Self, Output = Self> + Add<Self, Output = Self> + Div<Self, Output = Self> + Sqrt + Copy
+    Mul<Self, Output = Self>
+    + Add<Self, Output = Self>
+    + Div<Self, Output = Self>
+    + Sqrt
+    + Copy
+    + From<i8>
 {
 }
 
 impl<T> NumberLike for T where
-    T: Mul<Self, Output = Self> + Add<Self, Output = Self> + Div<Self, Output = Self> + Sqrt + Copy
+    T: Mul<Self, Output = Self>
+        + Add<Self, Output = Self>
+        + Div<Self, Output = Self>
+        + Sqrt
+        + Copy
+        + From<i8>
 {
 }
 
-pub mod matrix {}
+pub mod matrix {
+    use super::*;
+
+    #[derive(Clone, Debug)]
+    pub struct Mat4<T: NumberLike> {
+        pub components: [[T; 4]; 4],
+    }
+    impl<T: NumberLike> Mat4<T> {
+        pub fn empty() -> Mat4<T> {
+            Mat4 {
+                components: [[0.into(); 4]; 4],
+            }
+        }
+        pub fn identity() -> Mat4<T> {
+            let mut ret = Mat4 {
+                components: [[0.into(); 4]; 4],
+            };
+            ret.components[0][0] = 1.into();
+            ret.components[1][1] = 1.into();
+            ret.components[2][2] = 1.into();
+            ret.components[3][3] = 1.into();
+            ret
+        }
+    }
+    impl<T: NumberLike> Index<usize> for Mat4<T> {
+        type Output = [T; 4];
+
+        fn index(&self, index: usize) -> &Self::Output {
+            &self.components[index]
+        }
+    }
+    impl<T: NumberLike> MulAssign<T> for Mat4<T> {
+        fn mul_assign(&mut self, rhs: T) {
+            self.components = self.components.map(|arr| arr.map(|v| v * rhs));
+        }
+    }
+}
 
 pub mod vector {
     use super::*;
