@@ -4,12 +4,24 @@ pub trait Sqrt {
     fn sqrt(self) -> Self;
 }
 
-impl<T> Sqrt for T
-where
-    T: Into<f64> + From<f64>,
-{
+impl Sqrt for f32 {
     fn sqrt(self) -> Self {
-        self.into().sqrt().into()
+        self.sqrt()
+    }
+}
+impl Sqrt for f64 {
+    fn sqrt(self) -> Self {
+        self.sqrt()
+    }
+}
+impl Sqrt for i32 {
+    fn sqrt(self) -> Self {
+        (self as f64).sqrt() as i32
+    }
+}
+impl Sqrt for i64 {
+    fn sqrt(self) -> Self {
+        (self as f64).sqrt() as i64
     }
 }
 
@@ -17,7 +29,6 @@ pub trait NumberLike:
     Mul<Self, Output = Self>
     + Add<Self, Output = Self>
     + Div<Self, Output = Self>
-    + Sqrt
     + Copy
     + From<i8>
 {
@@ -27,7 +38,6 @@ impl<T> NumberLike for T where
     T: Mul<Self, Output = Self>
         + Add<Self, Output = Self>
         + Div<Self, Output = Self>
-        + Sqrt
         + Copy
         + From<i8>
 {
@@ -81,21 +91,21 @@ pub mod vector {
         pub z: T,
         pub w: T,
     }
-    impl<T> Vector4<T>
-    where
-        T: NumberLike,
-    {
+    impl<T:NumberLike+Sqrt> Vector4<T> {
         ///Might act weird on non floating point types
         pub fn norm(&self) -> T {
             (self.x * self.x + self.y * self.y + self.z * self.z + self.w * self.w).sqrt()
-        }
-        pub fn norm2(&self) -> T {
-            self.x * self.x + self.y * self.y + self.z * self.z + self.w * self.w
         }
         ///Might act weird on non floating point types
         ///Might panic or return a nonsense Vector for 0 vectors
         pub fn normalized(self) -> Self {
             self / self.norm()
+        }
+    }
+    impl<T:NumberLike> Vector4<T>
+    {
+        pub fn norm2(&self) -> T {
+            self.x * self.x + self.y * self.y + self.z * self.z + self.w * self.w
         }
     }
     impl<T> Mul<T> for Vector4<T>
@@ -149,20 +159,21 @@ pub mod vector {
         pub y: T,
         pub z: T,
     }
-    impl<T> Vector3<T>
-    where
-        T: NumberLike,
-    {
+    impl<T:NumberLike+Sqrt> Vector3<T> {
         ///Might act weird on non floating point types
         pub fn norm(&self) -> T {
             (self.x * self.x + self.y * self.y + self.z * self.z).sqrt()
         }
-        pub fn norm2(&self) -> T {
-            self.x * self.x + self.y * self.y + self.z * self.z
-        }
         ///Might act weird on non floating point types
+        ///Might panic or return a nonsense Vector for 0 vectors
         pub fn normalized(self) -> Self {
             self / self.norm()
+        }
+    }
+    impl<T:NumberLike> Vector3<T>
+    {
+        pub fn norm2(&self) -> T {
+            self.x * self.x + self.y * self.y + self.z * self.z
         }
     }
     impl<T> Mul<T> for Vector3<T>
