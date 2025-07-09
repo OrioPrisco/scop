@@ -1,4 +1,4 @@
-use std::ops::{Add, AddAssign, Div, DivAssign, Index, Mul, MulAssign};
+use std::ops::{Add, AddAssign, Div, DivAssign, Index, IndexMut, Mul, MulAssign};
 
 pub trait Sqrt {
     fn sqrt(self) -> Self;
@@ -28,6 +28,7 @@ impl Sqrt for i64 {
 pub trait NumberLike:
     Mul<Self, Output = Self>
     + Add<Self, Output = Self>
+    + AddAssign<Self>
     + Div<Self, Output = Self>
     + Copy
     + From<i8>
@@ -37,6 +38,7 @@ pub trait NumberLike:
 impl<T> NumberLike for T where
     T: Mul<Self, Output = Self>
         + Add<Self, Output = Self>
+        + AddAssign<Self>
         + Div<Self, Output = Self>
         + Copy
         + From<i8>
@@ -74,9 +76,70 @@ pub mod matrix {
             &self.components[index]
         }
     }
+    impl<T: NumberLike> IndexMut<usize> for Mat4<T> {
+        fn index_mut(&mut self, index: usize) -> &mut Self::Output {
+            &mut self.components[index]
+        }
+    }
     impl<T: NumberLike> MulAssign<T> for Mat4<T> {
         fn mul_assign(&mut self, rhs: T) {
             self.components = self.components.map(|arr| arr.map(|v| v * rhs));
+        }
+    }
+    impl<T: NumberLike> Mul<T> for &Mat4<T> {
+        type Output = Mat4<T>;
+        fn mul(self, rhs: T) -> Self::Output {
+            Mat4 {
+                components: self.components.map(|arr| arr.map(|v| v * rhs)),
+            }
+        }
+    }
+    impl<T: NumberLike> AddAssign<Self> for Mat4<T> {
+        fn add_assign(&mut self, rhs: Self) {
+            for y in 0..4 {
+                for x in 0..4 {
+                    self.components[y][x] = self.components[y][x] + rhs.components[y][x]
+                }
+            }
+        }
+    }
+    impl<T: NumberLike> Add<Self> for &Mat4<T> {
+        type Output = Mat4<T>;
+        fn add(self, rhs: Self) -> Self::Output {
+            let mut ret = Mat4::<T>::empty();
+            for y in 0..4 {
+                for x in 0..4 {
+                    ret.components[y][x] = self.components[y][x] + rhs.components[y][x]
+                }
+            }
+            ret
+        }
+    }
+    impl<T: NumberLike> Mul<Self> for &Mat4<T> {
+        type Output = Mat4<T>;
+        fn mul(self, rhs: Self) -> Self::Output {
+            let mut ret = Mat4::<T>::empty();
+            for y in 0..4 {
+                for x in 0..4 {
+                    for item in 0..4 {
+                        ret.components[y][x] += self.components[y][item] * rhs.components[item][x];
+                    }
+                }
+            }
+            ret
+        }
+    }
+    impl<T: NumberLike> MulAssign<&Self> for Mat4<T> {
+        fn mul_assign(&mut self, rhs: &Self) {
+            let mut ret = Self::empty();
+            for y in 0..4 {
+                for x in 0..4 {
+                    for item in 0..4 {
+                        ret.components[y][x] += self.components[y][item] * rhs.components[item][x];
+                    }
+                }
+            }
+            *self = ret;
         }
     }
 }
