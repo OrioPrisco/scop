@@ -142,6 +142,25 @@ pub mod matrix {
             *self = ret;
         }
     }
+    use super::vector::Vector4;
+    impl<T: NumberLike> Mul<&Vector4<T>> for &Mat4<T> {
+        type Output = Vector4<T>;
+        fn mul(self, rhs: &Vector4<T>) -> Self::Output {
+            let mut ret = Vector4::<T>::zero();
+            for y in 0..4 {
+                for item in 0..4 {
+                    ret[y] += self.components[y][item] * rhs[item];
+                }
+            }
+            ret
+        }
+    }
+    impl<T: NumberLike> Mul<&Mat4<T>> for &Vector4<T> {
+        type Output = Vector4<T>;
+        fn mul(self, rhs: &Mat4<T>) -> Self::Output {
+            rhs * self
+        }
+    }
 }
 
 pub mod vector {
