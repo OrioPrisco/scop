@@ -1,4 +1,4 @@
-use std::ops::{Add, Div, Index, Mul, MulAssign};
+use std::ops::{Add, AddAssign, Div, DivAssign, Index, Mul, MulAssign};
 
 pub trait Sqrt {
     fn sqrt(self) -> Self;
@@ -91,28 +91,24 @@ pub mod vector {
         pub z: T,
         pub w: T,
     }
-    impl<T:NumberLike+Sqrt> Vector4<T> {
+    impl<T: NumberLike + Sqrt> Vector4<T> {
         ///Might act weird on non floating point types
         pub fn norm(&self) -> T {
             (self.x * self.x + self.y * self.y + self.z * self.z + self.w * self.w).sqrt()
         }
         ///Might act weird on non floating point types
         ///Might panic or return a nonsense Vector for 0 vectors
-        pub fn normalized(self) -> Self {
+        pub fn normalized(&self) -> Self {
             self / self.norm()
         }
     }
-    impl<T:NumberLike> Vector4<T>
-    {
+    impl<T: NumberLike> Vector4<T> {
         pub fn norm2(&self) -> T {
             self.x * self.x + self.y * self.y + self.z * self.z + self.w * self.w
         }
     }
-    impl<T> Mul<T> for Vector4<T>
-    where
-        T: NumberLike,
-    {
-        type Output = Self;
+    impl<T: NumberLike> Mul<T> for &Vector4<T> {
+        type Output = Vector4<T>;
 
         fn mul(self, rhs: T) -> Self::Output {
             Vector4 {
@@ -123,11 +119,16 @@ pub mod vector {
             }
         }
     }
-    impl<T> Div<T> for Vector4<T>
-    where
-        T: NumberLike,
-    {
-        type Output = Self;
+    impl<T: NumberLike + MulAssign> MulAssign<T> for Vector4<T> {
+        fn mul_assign(&mut self, rhs: T) {
+            self.x *= rhs;
+            self.y *= rhs;
+            self.z *= rhs;
+            self.w *= rhs;
+        }
+    }
+    impl<T: NumberLike> Div<T> for &Vector4<T> {
+        type Output = Vector4<T>;
 
         fn div(self, rhs: T) -> Self::Output {
             Vector4 {
@@ -138,13 +139,18 @@ pub mod vector {
             }
         }
     }
-    impl<T> Add<Self> for Vector4<T>
-    where
-        T: NumberLike,
-    {
+    impl<T: NumberLike + DivAssign> DivAssign<T> for Vector4<T> {
+        fn div_assign(&mut self, rhs: T) {
+            self.x /= rhs;
+            self.y /= rhs;
+            self.z /= rhs;
+            self.w /= rhs;
+        }
+    }
+    impl<T: NumberLike> Add<&Self> for Vector4<T> {
         type Output = Self;
 
-        fn add(self, rhs: Self) -> Self::Output {
+        fn add(self, rhs: &Self) -> Self::Output {
             Vector4 {
                 x: self.x + rhs.x,
                 y: self.y + rhs.y,
@@ -153,34 +159,38 @@ pub mod vector {
             }
         }
     }
+    impl<T: NumberLike + AddAssign> AddAssign<T> for Vector4<T> {
+        fn add_assign(&mut self, rhs: T) {
+            self.x += rhs;
+            self.y += rhs;
+            self.z += rhs;
+            self.w += rhs;
+        }
+    }
     #[derive(Clone, Copy, Debug)]
     pub struct Vector3<T: NumberLike> {
         pub x: T,
         pub y: T,
         pub z: T,
     }
-    impl<T:NumberLike+Sqrt> Vector3<T> {
+    impl<T: NumberLike + Sqrt> Vector3<T> {
         ///Might act weird on non floating point types
         pub fn norm(&self) -> T {
             (self.x * self.x + self.y * self.y + self.z * self.z).sqrt()
         }
         ///Might act weird on non floating point types
         ///Might panic or return a nonsense Vector for 0 vectors
-        pub fn normalized(self) -> Self {
+        pub fn normalized(&self) -> Self {
             self / self.norm()
         }
     }
-    impl<T:NumberLike> Vector3<T>
-    {
+    impl<T: NumberLike> Vector3<T> {
         pub fn norm2(&self) -> T {
             self.x * self.x + self.y * self.y + self.z * self.z
         }
     }
-    impl<T> Mul<T> for Vector3<T>
-    where
-        T: NumberLike,
-    {
-        type Output = Self;
+    impl<T: NumberLike> Mul<T> for &Vector3<T> {
+        type Output = Vector3<T>;
 
         fn mul(self, rhs: T) -> Self::Output {
             Vector3 {
@@ -190,11 +200,15 @@ pub mod vector {
             }
         }
     }
-    impl<T> Div<T> for Vector3<T>
-    where
-        T: NumberLike,
-    {
-        type Output = Self;
+    impl<T: NumberLike + MulAssign> MulAssign<T> for Vector3<T> {
+        fn mul_assign(&mut self, rhs: T) {
+            self.x *= rhs;
+            self.y *= rhs;
+            self.z *= rhs;
+        }
+    }
+    impl<T: NumberLike> Div<T> for &Vector3<T> {
+        type Output = Vector3<T>;
 
         fn div(self, rhs: T) -> Self::Output {
             Vector3 {
@@ -204,18 +218,29 @@ pub mod vector {
             }
         }
     }
-    impl<T> Add<Self> for Vector3<T>
-    where
-        T: NumberLike,
-    {
+    impl<T: NumberLike + DivAssign> DivAssign<T> for Vector3<T> {
+        fn div_assign(&mut self, rhs: T) {
+            self.x /= rhs;
+            self.y /= rhs;
+            self.z /= rhs;
+        }
+    }
+    impl<T: NumberLike> Add<&Self> for Vector3<T> {
         type Output = Self;
 
-        fn add(self, rhs: Self) -> Self::Output {
+        fn add(self, rhs: &Self) -> Self::Output {
             Vector3 {
                 x: self.x + rhs.x,
                 y: self.y + rhs.y,
                 z: self.z + rhs.z,
             }
+        }
+    }
+    impl<T: NumberLike + AddAssign> AddAssign<T> for Vector3<T> {
+        fn add_assign(&mut self, rhs: T) {
+            self.x += rhs;
+            self.y += rhs;
+            self.z += rhs;
         }
     }
 }
