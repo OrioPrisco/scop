@@ -169,6 +169,14 @@ pub mod vector {
         pub fn norm2(&self) -> T {
             self.x * self.x + self.y * self.y + self.z * self.z + self.w * self.w
         }
+        pub fn zero() -> Vector4<T> {
+            Self {
+                x: 0.into(),
+                y: 0.into(),
+                z: 0.into(),
+                w: 0.into(),
+            }
+        }
     }
     impl<T: NumberLike> Mul<T> for &Vector4<T> {
         type Output = Vector4<T>;
@@ -230,6 +238,29 @@ pub mod vector {
             self.w += rhs;
         }
     }
+    impl<T: NumberLike> Index<usize> for Vector4<T> {
+        type Output = T;
+        fn index(&self, index: usize) -> &Self::Output {
+            match index {
+                0 => &self.x,
+                1 => &self.y,
+                2 => &self.z,
+                3 => &self.w,
+                x => panic!("Non existant index {x}"),
+            }
+        }
+    }
+    impl<T: NumberLike> IndexMut<usize> for Vector4<T> {
+        fn index_mut(&mut self, index: usize) -> &mut Self::Output {
+            match index {
+                0 => &mut self.x,
+                1 => &mut self.y,
+                2 => &mut self.z,
+                3 => &mut self.w,
+                x => panic!("Non existant index {x}"),
+            }
+        }
+    }
     #[derive(Clone, Copy, Debug)]
     pub struct Vector3<T: NumberLike> {
         pub x: T,
@@ -250,6 +281,13 @@ pub mod vector {
     impl<T: NumberLike> Vector3<T> {
         pub fn norm2(&self) -> T {
             self.x * self.x + self.y * self.y + self.z * self.z
+        }
+        pub fn zero() -> Vector3<T> {
+            Self {
+                x: 0.into(),
+                y: 0.into(),
+                z: 0.into(),
+            }
         }
     }
     impl<T: NumberLike> Mul<T> for &Vector3<T> {
@@ -304,6 +342,27 @@ pub mod vector {
             self.x += rhs;
             self.y += rhs;
             self.z += rhs;
+        }
+    }
+    impl<T: NumberLike> Index<usize> for Vector3<T> {
+        type Output = T;
+        fn index(&self, index: usize) -> &Self::Output {
+            match index {
+                0 => &self.x,
+                1 => &self.y,
+                2 => &self.z,
+                x => panic!("Non existant index {x}"),
+            }
+        }
+    }
+    impl<T: NumberLike> IndexMut<usize> for Vector3<T> {
+        fn index_mut(&mut self, index: usize) -> &mut Self::Output {
+            match index {
+                0 => &mut self.x,
+                1 => &mut self.y,
+                2 => &mut self.z,
+                x => panic!("Non existant index {x}"),
+            }
         }
     }
 }
