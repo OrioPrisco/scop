@@ -1,4 +1,4 @@
-use std::ops::{Add, AddAssign, Div, DivAssign, Index, IndexMut, Mul, MulAssign};
+use std::ops::{Add, AddAssign, Div, DivAssign, Index, IndexMut, Mul, MulAssign, Neg, Sub};
 
 #[macro_use]
 mod helper_macros;
@@ -23,6 +23,9 @@ pub trait NumberLike:
     Mul<Self, Output = Self>
     + Add<Self, Output = Self>
     + AddAssign<Self>
+    + Sub<Self, Output = Self>
+    + Neg<Output = Self>
+    + Mul<Self, Output = Self>
     + Div<Self, Output = Self>
     + Copy
     + From<i8>
@@ -33,6 +36,9 @@ impl<T> NumberLike for T where
     T: Mul<Self, Output = Self>
         + Add<Self, Output = Self>
         + AddAssign<Self>
+        + Sub<Self, Output = Self>
+        + Neg<Output = Self>
+        + Mul<Self, Output = Self>
         + Div<Self, Output = Self>
         + Copy
         + From<i8>
@@ -61,6 +67,44 @@ pub mod matrix {
             ret.components[1][1] = 1.into();
             ret.components[2][2] = 1.into();
             ret.components[3][3] = 1.into();
+            ret
+        }
+        pub fn translate(vec: &Vector3<T>) -> Self {
+            let mut ret = Self::identity();
+            for i in 0..3 {
+                ret[3][i] = vec[i];
+            }
+            ret
+        }
+        pub fn scale(vec: &Vector3<T>) -> Self {
+            let mut ret = Self::identity();
+            for i in 0..3 {
+                ret[i][i] = vec[i];
+            }
+            ret
+        }
+    }
+    impl<T: NumberLike + Cos + Sin> Mat4<T> {
+        pub fn rotate(vec: &Vector3<T>, angle: &T) -> Self {
+            let mut ret = Self::identity();
+            let cos_theta = angle.cos();
+            let sin_theta = angle.sin();
+            for y in 0..3 {
+                for x in 0..3 {
+                    ret[y][x] = (<i8 as Into<T>>::into(1) - cos_theta) * vec[y] * vec[x];
+                    if x == y {
+                        ret[y][x] += cos_theta;
+                    }
+                }
+            }
+            //There's probably a more clever way of doing this but i am not
+            ret[1][0] += vec.z * sin_theta;
+            ret[2][0] += -vec.y * sin_theta;
+            ret[0][1] += -vec.z * sin_theta;
+            ret[2][1] += vec.x * sin_theta;
+            ret[0][2] += vec.y * sin_theta;
+            ret[1][2] += -vec.x * sin_theta;
+
             ret
         }
     }
