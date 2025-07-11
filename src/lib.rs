@@ -94,7 +94,7 @@ pub mod vao {
         ctx: Context,
     }
 
-    impl<'vbo, 'vert, 'ebo, 'ind> Vao<'vbo, 'ebo> {
+    impl<'vbo, 'ebo> Vao<'vbo, 'ebo> {
         pub fn new() -> GLResult<Vao<'vbo, 'ebo>> {
             let mut vao = Vao {
                 handle: 0,
@@ -226,7 +226,7 @@ pub mod vbo {
             unsafe {
                 gl::NamedBufferData(
                     self.raw(),
-                    (vertices.len() * mem::size_of::<f32>()) as isize,
+                    mem::size_of_val(vertices) as isize,
                     vertices.as_ptr() as *const c_void,
                     gl::STATIC_DRAW,
                 )
@@ -275,7 +275,7 @@ pub mod ebo {
             unsafe {
                 gl::NamedBufferData(
                     self.raw(),
-                    (indices.len() * mem::size_of::<u32>()) as isize,
+                    std::mem::size_of_val(indices) as isize,
                     indices.as_ptr() as *const c_void,
                     gl::STATIC_DRAW,
                 )
@@ -358,7 +358,7 @@ pub mod shader {
             let shader = unsafe { gl::CreateShader(shader_type) };
             get_error().unwrap();
             let mut status = 0;
-            let source_ptr: *const i8 = program.as_ptr() as *const i8;
+            let source_ptr: *const i8 = program.as_ptr();
             unsafe { gl::ShaderSource(shader, 1, &raw const source_ptr, ptr::null()) };
             get_error().unwrap();
             unsafe { gl::CompileShader(shader) };
@@ -492,10 +492,10 @@ pub mod texture {
             get_error().unwrap();
             Texture { handle }
         }
-        pub fn bind<'tex, 'ctx, 'act>(
+        pub fn bind<'tex, 'ctx>(
             &'tex self,
             context: &'ctx mut Context,
-            active_context: &'act mut ActiveContext,
+            active_context: &mut ActiveContext,
         ) -> BoundTexture<'ctx, 'tex> {
             active_context.switch_to(context.number);
             unsafe { gl::BindTexture(gl::TEXTURE_2D, self.handle) };
@@ -506,11 +506,7 @@ pub mod texture {
         }
     }
     impl<'ctx, 'tex> BoundTexture<'ctx, 'tex> {
-        pub fn bind_data<'act>(
-            &self,
-            image: &image::RgbaImage,
-            active_context: &'act mut ActiveContext,
-        ) {
+        pub fn bind_data(&self, image: &image::RgbaImage, active_context: &mut ActiveContext) {
             active_context.switch_to(self.context.number);
 
             unsafe {
@@ -536,10 +532,10 @@ pub mod texture {
             }
             get_error().unwrap();
         }
-        pub fn bind_data_from_path<'act>(
+        pub fn bind_data_from_path(
             &self,
             path: &str,
-            active_context: &'act mut ActiveContext,
+            active_context: &mut ActiveContext,
         ) -> image::error::ImageResult<()> {
             let img = image::ImageReader::open(path)?.decode()?;
             let img = match img {
