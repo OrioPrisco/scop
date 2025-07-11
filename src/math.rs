@@ -46,13 +46,14 @@ pub mod matrix {
     pub struct Mat4<T: NumberLike> {
         pub components: [[T; 4]; 4],
     }
+    use super::vector::Vector3;
     impl<T: NumberLike> Mat4<T> {
-        pub fn empty() -> Mat4<T> {
+        pub fn empty() -> Self {
             Mat4 {
                 components: [[0.into(); 4]; 4],
             }
         }
-        pub fn identity() -> Mat4<T> {
+        pub fn identity() -> Self {
             let mut ret = Mat4 {
                 components: [[0.into(); 4]; 4],
             };
