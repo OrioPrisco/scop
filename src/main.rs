@@ -97,11 +97,11 @@ fn main() {
 
         let time_value = glfw.get_time() as f32;
         let green_value = time_value.sin() / 2.0 + 0.5;
-        let trans: Mat4<f32> = &Mat4::translate(&Vector3 {
+        let trans: Mat4<f32> = Mat4::translate(&Vector3 {
             x: 0.0,
             y: 0.5,
             z: 0.0,
-        }) * &Mat4::rotate(
+        }) * Mat4::rotate(
             &Vector3 {
                 x: 1.0,
                 y: -1.0,
