@@ -1,29 +1,13 @@
 use std::ops::{Add, AddAssign, Div, DivAssign, Index, IndexMut, Mul, MulAssign};
 
+#[macro_use]
+mod helper_macros;
+
 pub trait Sqrt {
     fn sqrt(self) -> Self;
 }
-
-impl Sqrt for f32 {
-    fn sqrt(self) -> Self {
-        self.sqrt()
-    }
-}
-impl Sqrt for f64 {
-    fn sqrt(self) -> Self {
-        self.sqrt()
-    }
-}
-impl Sqrt for i32 {
-    fn sqrt(self) -> Self {
-        (self as f64).sqrt() as i32
-    }
-}
-impl Sqrt for i64 {
-    fn sqrt(self) -> Self {
-        (self as f64).sqrt() as i64
-    }
-}
+impl_float_trait!(Sqrt, sqrt, f64 f32);
+impl_asf64_trait!(Sqrt, sqrt, i32 i64);
 
 pub trait NumberLike:
     Mul<Self, Output = Self>
