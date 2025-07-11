@@ -9,6 +9,16 @@ pub trait Sqrt {
 impl_float_trait!(Sqrt, sqrt, f64 f32);
 impl_asf64_trait!(Sqrt, sqrt, i32 i64);
 
+pub trait Cos {
+    fn cos(self) -> Self;
+}
+impl_float_trait!(Cos, cos, f64 f32);
+
+pub trait Sin {
+    fn sin(self) -> Self;
+}
+impl_float_trait!(Sin, sin, f64 f32);
+
 pub trait NumberLike:
     Mul<Self, Output = Self>
     + Add<Self, Output = Self>
