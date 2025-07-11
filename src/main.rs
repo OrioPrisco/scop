@@ -1,11 +1,14 @@
 use glfw::{Action, Context, GlfwReceiver, Key};
 use std::cell::RefCell;
+use std::f32::consts::TAU;
 use std::ffi::CStr;
 use std::ffi::c_void;
 use std::mem;
 use std::ptr;
 
 use scop::ebo::Ebo;
+use scop::math::matrix::Mat4;
+use scop::math::vector::{Vector3, Vector4};
 use scop::shader::{Shader, ShaderProgram};
 use scop::texture::{self, Texture};
 use scop::vao::{BoundVao, Vao};
@@ -94,7 +97,26 @@ fn main() {
 
         let time_value = glfw.get_time() as f32;
         let green_value = time_value.sin() / 2.0 + 0.5;
+        let trans: Mat4<f32> = &Mat4::translate(&Vector3 {
+            x: 0.0,
+            y: 0.5,
+            z: 0.0,
+        }) * &Mat4::rotate(
+            &Vector3 {
+                x: 1.0,
+                y: -1.0,
+                z: 1.0,
+            }
+            .normalized(),
+            &time_value,
+        );
         shader_program.use_program();
+        unsafe {
+            let loc = gl::GetUniformLocation(shader_program.raw(), c"transform".as_ptr());
+            scop::get_error().unwrap();
+            gl::UniformMatrix4fv(loc, 1, gl::FALSE, (&trans.components[0][0]) as *const f32);
+            scop::get_error().unwrap();
+        }
         //unsafe {shader_program.set4f(c"our_color", 0.0, green_value, 0.0, 1.0)}.unwrap();
         unsafe { shader_program.set_texture(c"texture1", &bound_text) };
         unsafe { shader_program.set_texture(c"texture2", &bound_text2) };
