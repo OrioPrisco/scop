@@ -111,12 +111,7 @@ fn main() {
             &time_value,
         );
         shader_program.use_program();
-        unsafe {
-            let loc = gl::GetUniformLocation(shader_program.raw(), c"transform".as_ptr());
-            scop::get_error().unwrap();
-            gl::UniformMatrix4fv(loc, 1, gl::FALSE, (&trans.components[0][0]) as *const f32);
-            scop::get_error().unwrap();
-        }
+        unsafe {shader_program.set_mat(c"transform", &trans)}.unwrap();
         //unsafe {shader_program.set4f(c"our_color", 0.0, green_value, 0.0, 1.0)}.unwrap();
         unsafe { shader_program.set_texture(c"texture1", &bound_text) };
         unsafe { shader_program.set_texture(c"texture2", &bound_text2) };

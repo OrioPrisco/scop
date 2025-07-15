@@ -383,6 +383,7 @@ pub mod shader {
     }
 
     //TODO:impl Drop
+    use math::matrix::Mat4;
     pub struct ShaderProgram(GLuint);
     impl ShaderProgram {
         //TODO: Maybe take an array of programs ?
@@ -428,6 +429,23 @@ pub mod shader {
                 return None;
             }
             unsafe { gl::Uniform1i(location, int) };
+            get_error().unwrap();
+            Some(())
+        }
+        pub unsafe fn set_mat(&self, name: &CStr, mat: &Mat4<f32>) -> Option<()> {
+            let location = unsafe { gl::GetUniformLocation(self.raw(), name.as_ptr()) };
+            get_error().unwrap();
+            if location == -1 {
+                return None;
+            }
+            unsafe {
+                gl::UniformMatrix4fv(
+                    location,
+                    1,
+                    gl::FALSE,
+                    (&mat.components[0][0]) as *const f32,
+                )
+            };
             get_error().unwrap();
             Some(())
         }
