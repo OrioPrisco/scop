@@ -18,6 +18,14 @@ pub trait Sin {
     fn sin(self) -> Self;
 }
 impl_float_trait!(Sin, sin, f64 f32);
+pub trait Tan {
+    fn tan(self) -> Self;
+}
+impl_float_trait!(Tan, tan, f64 f32);
+pub trait ToRadians {
+    fn to_radians(self) -> Self;
+}
+impl_float_trait!(ToRadians, to_radians, f64 f32);
 
 pub trait NumberLike:
     Mul<Self, Output = Self>
@@ -104,6 +112,23 @@ pub mod matrix {
             ret[2][1] += vec.x * sin_theta;
             ret[0][2] += vec.y * sin_theta;
             ret[1][2] += -vec.x * sin_theta;
+
+            ret
+        }
+    }
+    impl<T: NumberLike + Tan + ToRadians> Mat4<T> {
+        pub fn perspective(angle : T, aspect_ratio : T, near: T, far : T) -> Self {
+            let mut ret = Mat4 {
+                components: [[0.into(); 4]; 4],
+            };
+            let tan_half =  (angle/2.into()).to_radians().tan();
+            let scale_x = <i8 as Into<T>>::into(1) / (tan_half * aspect_ratio);
+            let scale_y = <i8 as Into<T>>::into(1) / tan_half;
+            ret.components[0][0] = scale_x;
+            ret.components[1][1] = scale_y;
+            ret.components[2][2] = - ((far)/(far-near));
+            ret.components[2][3] = (-1).into();
+            ret.components[3][2] = - ((far * near)/(far-near));
 
             ret
         }

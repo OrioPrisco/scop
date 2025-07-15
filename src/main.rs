@@ -111,7 +111,7 @@ fn main() {
             &time_value,
         );
         shader_program.use_program();
-        unsafe {shader_program.set_mat(c"transform", &trans)}.unwrap();
+        unsafe { shader_program.set_mat(c"transform", &trans) }.unwrap();
         //unsafe {shader_program.set4f(c"our_color", 0.0, green_value, 0.0, 1.0)}.unwrap();
         unsafe { shader_program.set_texture(c"texture1", &bound_text) };
         unsafe { shader_program.set_texture(c"texture2", &bound_text2) };
