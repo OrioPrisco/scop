@@ -181,7 +181,7 @@ pub mod vao {
         pub fn draw_triangles(&self) {
             assert!(self.vao.vbo.is_some());
             assert!(self.vao.vbo.unwrap().borrow().len().is_some());
-            let verts = self.vao.vbo.unwrap().borrow().len().unwrap() / 3;
+            let verts = self.vao.vbo.unwrap().borrow().len().unwrap() / ELEMS_PER_VERTEX;
             unsafe { gl::DrawArrays(gl::TRIANGLES, 0, verts as i32) }
         }
         pub fn draw_elements(&self) {
