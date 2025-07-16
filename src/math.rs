@@ -93,7 +93,7 @@ pub mod matrix {
         }
     }
     impl<T: NumberLike + Cos + Sin> Mat4<T> {
-        pub fn rotate(vec: &Vector3<T>, angle: &T) -> Self {
+        pub fn rotate(vec: &Vector3<T>, angle: T) -> Self {
             let mut ret = Self::identity();
             let cos_theta = angle.cos();
             let sin_theta = angle.sin();
