@@ -7,10 +7,11 @@ out vec3 vertexColor;
 out vec2 TexCoord;
 
 uniform mat4 transform;
+uniform mat4 projection;
 
 void main()
 {
-    gl_Position = transform * vec4(aPos.x, aPos.y, aPos.z, 1.0);
+    gl_Position = projection * transform * vec4(aPos.x, aPos.y, aPos.z, 1.0);
     vertexColor = aColor;
     TexCoord = aTexCoord;
 }

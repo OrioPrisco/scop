@@ -85,6 +85,7 @@ fn main() {
         .bind_data_from_path("img/awesomeface.png", &mut active_texture)
         .expect("Cannot load texture");
 
+    let mut projection = Mat4::perspective(90.0, 16.0/9.0, 0.1, 1.0);
     while !window.should_close() {
         process_events(&mut window, &events);
 
@@ -99,19 +100,24 @@ fn main() {
         let green_value = time_value.sin() / 2.0 + 0.5;
         let trans: Mat4<f32> = Mat4::translate(&Vector3 {
             x: 0.0,
-            y: 0.5,
+            y: 0.0,
             z: 0.0,
         }) * Mat4::rotate(
             &Vector3 {
                 x: 1.0,
-                y: -1.0,
-                z: 1.0,
+                y: 0.0,
+                z: 0.0,
             }
             .normalized(),
             &time_value,
-        );
+        ) * Mat4::translate(&Vector3 {
+            x: 0.0,
+            y: 0.0,
+            z: -0.5,
+        });
         shader_program.use_program();
         unsafe { shader_program.set_mat(c"transform", &trans) }.unwrap();
+        unsafe { shader_program.set_mat(c"projection", &projection) }.unwrap();
         //unsafe {shader_program.set4f(c"our_color", 0.0, green_value, 0.0, 1.0)}.unwrap();
         unsafe { shader_program.set_texture(c"texture1", &bound_text) };
         unsafe { shader_program.set_texture(c"texture2", &bound_text2) };
