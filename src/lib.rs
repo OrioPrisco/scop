@@ -442,7 +442,7 @@ pub mod shader {
                 gl::UniformMatrix4fv(
                     location,
                     1,
-                    gl::FALSE,
+                    gl::TRUE,
                     (&mat.components[0][0]) as *const f32,
                 )
             };

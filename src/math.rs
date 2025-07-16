@@ -80,7 +80,7 @@ pub mod matrix {
         pub fn translate(vec: &Vector3<T>) -> Self {
             let mut ret = Self::identity();
             for i in 0..3 {
-                ret[3][i] = vec[i];
+                ret[i][3] = vec[i];
             }
             ret
         }
@@ -127,8 +127,8 @@ pub mod matrix {
             ret.components[0][0] = scale_x;
             ret.components[1][1] = scale_y;
             ret.components[2][2] = - ((far)/(far-near));
-            ret.components[2][3] = (-1).into();
-            ret.components[3][2] = - ((far * near)/(far-near));
+            ret.components[3][2] = (-1).into();
+            ret.components[2][3] = - ((far * near)/(far-near));
 
             ret
         }
