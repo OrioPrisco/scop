@@ -87,7 +87,9 @@ fn main() {
 
     let mut projection = Mat4::perspective(90.0, 16.0/9.0, 0.1, 1.0);
     while !window.should_close() {
-        process_events(&mut window, &events);
+        if let Some((width, height)) = process_events(&mut window, &events) {
+            projection = Mat4::perspective(90.0, (width as f32)/(height as f32), 0.1, 1.0);
+        }
 
         unsafe {
             gl::ClearColor(0.2, 0.3, 0.3, 1.0); //safe
@@ -130,11 +132,13 @@ fn main() {
     }
 }
 
-fn process_events(window: &mut glfw::Window, events: &GlfwReceiver<(f64, glfw::WindowEvent)>) {
+fn process_events(window: &mut glfw::Window, events: &GlfwReceiver<(f64, glfw::WindowEvent)>) -> Option<(i32,i32)>{
+    let mut ret = None;
     for (_, event) in glfw::flush_messages(events) {
         match event {
             glfw::WindowEvent::FramebufferSize(width, height) => {
                 unsafe { gl::Viewport(0, 0, width, height) };
+                ret = Some((width, height));
             }
             glfw::WindowEvent::Key(Key::Escape, _, Action::Press, _) => {
                 window.set_should_close(true)
@@ -142,4 +146,5 @@ fn process_events(window: &mut glfw::Window, events: &GlfwReceiver<(f64, glfw::W
             _ => {}
         }
     }
+    ret
 }
