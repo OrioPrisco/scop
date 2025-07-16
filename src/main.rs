@@ -165,7 +165,7 @@ fn main() {
         let bound_vao = BoundVao::new(&mut vao, context);
         for (index, position) in cube_positions.iter().enumerate() {
             let model = Mat4::translate(&position)
-                 * Mat4::rotate(
+                * Mat4::rotate(
                     &Vector3 {
                         x: 1.0,
                         y: 0.3,
@@ -185,7 +185,10 @@ fn main() {
     }
 }
 
-fn process_events(window: &mut glfw::Window, events: &GlfwReceiver<(f64, glfw::WindowEvent)>) -> Option<(i32,i32)>{
+fn process_events(
+    window: &mut glfw::Window,
+    events: &GlfwReceiver<(f64, glfw::WindowEvent)>,
+) -> Option<(i32, i32)> {
     let mut ret = None;
     for (_, event) in glfw::flush_messages(events) {
         match event {

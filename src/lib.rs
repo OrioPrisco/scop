@@ -439,12 +439,7 @@ pub mod shader {
                 return None;
             }
             unsafe {
-                gl::UniformMatrix4fv(
-                    location,
-                    1,
-                    gl::TRUE,
-                    (&mat.components[0][0]) as *const f32,
-                )
+                gl::UniformMatrix4fv(location, 1, gl::TRUE, (&mat.components[0][0]) as *const f32)
             };
             get_error().unwrap();
             Some(())
