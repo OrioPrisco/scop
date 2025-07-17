@@ -1,4 +1,5 @@
 use std::ops::{Add, AddAssign, Div, DivAssign, Index, IndexMut, Mul, MulAssign, Neg, Sub, SubAssign};
+use std::mem;
 
 #[macro_use]
 mod helper_macros;
@@ -90,6 +91,16 @@ pub mod matrix {
                 ret[i][i] = vec[i];
             }
             ret
+        }
+        pub fn transpose(mut self) -> Self {
+            for y in 0..4 {
+                let comps = self.components.as_mut_slice();
+                let (head, tail) = comps.split_at_mut(y+1);
+                for x in y+1..4 {
+                    mem::swap(&mut head[y][x], &mut tail[x - y - 1][y]);
+                }
+            }
+            self
         }
     }
     impl<T: NumberLike + Cos + Sin> Mat4<T> {
