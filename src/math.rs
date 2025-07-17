@@ -380,6 +380,13 @@ pub mod vector {
                 z: 0.into(),
             }
         }
+        pub fn cross(&self, rhs: &Self) -> Self {
+            Vector3 {
+                x: self.y * rhs.z - self.z * rhs.y,
+                y: self.z * rhs.x - self.x * rhs.z,
+                z: self.x * rhs.y - self.y * rhs.x,
+            }
+        }
     }
     impl<T: NumberLike> Mul<&T> for &Vector3<T> {
         type Output = Vector3<T>;
