@@ -127,6 +127,22 @@ pub mod matrix {
             ret
         }
     }
+    impl<T: NumberLike + Cos + Sin + Sqrt> Mat4<T> {
+        pub fn lookat(position: Vector3<T>, target: Vector3<T>, up: Vector3<T>) -> Self {
+            let mut ret = Self::identity();
+
+            let direction = (position - target).normalized();
+            let right = up.cross(&direction).normalized();
+            let cam_up = direction.cross(&right);
+
+            for i in 0..3 {
+                ret[0][i] = right[i];
+                ret[1][i] = cam_up[i];
+                ret[2][i] = direction[i];
+            }
+            ret * Mat4::translate(&- position)
+        }
+    }
     impl<T: NumberLike + Tan + ToRadians> Mat4<T> {
         pub fn perspective(angle: T, aspect_ratio: T, near: T, far: T) -> Self {
             let mut ret = Mat4 {

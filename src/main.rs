@@ -133,11 +133,10 @@ fn main() {
         .bind_data_from_path("img/awesomeface.png", &mut active_texture)
         .expect("Cannot load texture");
 
-    let view = Mat4::translate(&Vector3 {
-        x: 0.0,
-        y: 0.0,
-        z: -3.0,
-    });
+    let camera_pos = Vector3 {x: 0.0, y: 0.0, z: 3.0};
+    let j = Vector3 {x: 0.0, y: 1.0, z: 0.0};
+    let camera_target = Vector3 {x: 0.0, y: 0.0, z: 0.0};
+    let up = Vector3 {x: 0.0, y: 1.0, z: 0.0};
     let mut projection =
         Mat4::perspective(45.0, (SCR_WIDTH as f32) / (SCR_HEIGHT as f32), 0.1, 100.0);
     unsafe { gl::Enable(gl::DEPTH_TEST) };
@@ -154,6 +153,7 @@ fn main() {
         };
 
         let time_value = glfw.get_time() as f32;
+        let view = Mat4::lookat(camera_pos - j * time_value, camera_target, up);
 
         let green_value = time_value.sin() / 2.0 + 0.5;
         shader_program.use_program();
