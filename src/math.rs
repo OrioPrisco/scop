@@ -1,4 +1,4 @@
-use std::ops::{Add, AddAssign, Div, DivAssign, Index, IndexMut, Mul, MulAssign, Neg, Sub};
+use std::ops::{Add, AddAssign, Div, DivAssign, Index, IndexMut, Mul, MulAssign, Neg, Sub, SubAssign};
 
 #[macro_use]
 mod helper_macros;
@@ -329,6 +329,38 @@ pub mod vector {
             self.w += rhs;
         }
     }
+    impl<T: NumberLike> Sub<Self> for &Vector4<T> {
+        type Output = Vector4<T>;
+
+        fn sub(self, rhs: Self) -> Self::Output {
+            Vector4 {
+                x: self.x - rhs.x,
+                y: self.y - rhs.y,
+                z: self.z - rhs.z,
+                w: self.z - rhs.w,
+            }
+        }
+    }
+    forward_move_binop!([T:NumberLike] impl Sub, sub for Vector4<T>, Vector4<T>);
+    impl<T: NumberLike + SubAssign> SubAssign<T> for Vector4<T> {
+        fn sub_assign(&mut self, rhs: T) {
+            self.x -= rhs;
+            self.y -= rhs;
+            self.z -= rhs;
+            self.w -= rhs;
+        }
+    }
+    impl<T: NumberLike + Neg> Neg for Vector4<T> {
+        type Output = Self;
+        fn neg(self) -> Self::Output {
+            Vector4 {
+                x : -self.x,
+                y : -self.y,
+                z : -self.z,
+                w : -self.w,
+            }
+        }
+    }
     impl<T: NumberLike> Index<usize> for Vector4<T> {
         type Output = T;
         fn index(&self, index: usize) -> &Self::Output {
@@ -443,6 +475,35 @@ pub mod vector {
             self.x += rhs;
             self.y += rhs;
             self.z += rhs;
+        }
+    }
+    impl<T: NumberLike> Sub<Self> for &Vector3<T> {
+        type Output = Vector3<T>;
+
+        fn sub(self, rhs: Self) -> Self::Output {
+            Vector3 {
+                x: self.x - rhs.x,
+                y: self.y - rhs.y,
+                z: self.z - rhs.z,
+            }
+        }
+    }
+    forward_move_binop!([T:NumberLike] impl Sub, sub for Vector3<T>, Vector3<T>);
+    impl<T: NumberLike + SubAssign> SubAssign<T> for Vector3<T> {
+        fn sub_assign(&mut self, rhs: T) {
+            self.x -= rhs;
+            self.y -= rhs;
+            self.z -= rhs;
+        }
+    }
+    impl<T: NumberLike + Neg> Neg for Vector3<T> {
+        type Output = Self;
+        fn neg(self) -> Self::Output {
+            Vector3 {
+                x : -self.x,
+                y : -self.y,
+                z : -self.z,
+            }
         }
     }
     impl<T: NumberLike> Index<usize> for Vector3<T> {
