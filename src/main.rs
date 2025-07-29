@@ -137,13 +137,12 @@ fn main() {
     let j = Vector3 {x: 0.0, y: 1.0, z: 0.0};
     let camera_target = Vector3 {x: 0.0, y: 0.0, z: 0.0};
     let up = Vector3 {x: 0.0, y: 1.0, z: 0.0};
+    let mut last_frame = glfw.get_time() as f32;
     let mut projection =
         Mat4::perspective(45.0, (SCR_WIDTH as f32) / (SCR_HEIGHT as f32), 0.1, 100.0);
     unsafe { gl::Enable(gl::DEPTH_TEST) };
     while !window.should_close() {
-        let camera_front = camera_target - camera_pos;
-
-        if let Some((width, height)) = process_events(&mut window, &events, &mut camera_pos, &camera_front, &up) {
+        if let Some((width, height)) = process_events(&events) {
             projection = Mat4::perspective(45.0, (width as f32) / (height as f32), 0.1, 100.0);
         }
 
@@ -155,6 +154,12 @@ fn main() {
         };
 
         let time_value = glfw.get_time() as f32;
+        let delta_time = time_value - last_frame;
+        last_frame = time_value;
+        let camera_front = camera_target - camera_pos;
+
+        process_input(&mut window, delta_time, &mut camera_pos, &camera_front, &up);
+
         let view = Mat4::lookat(camera_pos, camera_target, up);
 
         let green_value = time_value.sin() / 2.0 + 0.5;
@@ -187,15 +192,7 @@ fn main() {
     }
 }
 
-const camera_speed : f32 = 0.05;
-
-fn process_events(
-    window: &mut glfw::Window,
-    events: &GlfwReceiver<(f64, glfw::WindowEvent)>,
-    camera_pos: &mut Vector3<f32>,
-    camera_front: &Vector3<f32>,
-    camera_up: &Vector3<f32>,
-) -> Option<(i32, i32)> {
+fn process_events(events: &GlfwReceiver<(f64, glfw::WindowEvent)>) -> Option<(i32, i32)> {
     let mut ret = None;
     for (_, event) in glfw::flush_messages(events) {
         match event {
@@ -203,19 +200,34 @@ fn process_events(
                 unsafe { gl::Viewport(0, 0, width, height) };
                 ret = Some((width, height));
             }
-            glfw::WindowEvent::Key(key, _, Action::Press, _) |
-            glfw::WindowEvent::Key(key, _, Action::Repeat, _) => {
-                match key {
-                    Key::Escape => window.set_should_close(true),
-                    Key::W => *camera_pos += camera_front * camera_speed,
-                    Key::S => *camera_pos -= camera_front * camera_speed,
-                    Key::A => *camera_pos -= camera_front.cross(camera_up).normalized() * camera_speed,
-                    Key::D => *camera_pos += camera_front.cross(camera_up).normalized() * camera_speed,
-                    _ => (),
-                }
-            }
             _ => {}
         }
     }
     ret
+}
+
+fn process_input(
+    window: &mut glfw::Window,
+    delta_time: f32,
+    camera_pos: &mut Vector3<f32>,
+    camera_front: &Vector3<f32>,
+    camera_up: &Vector3<f32>,
+) {
+    if window.get_key(Key::Escape) == Action::Press {
+        window.set_should_close(true)
+    }
+
+    let camera_speed = 2.5 * delta_time;
+    if window.get_key(Key::W) == Action::Press {
+        *camera_pos += camera_front * camera_speed;
+    }
+    if window.get_key(Key::S) == Action::Press {
+        *camera_pos -= camera_front * camera_speed;
+    }
+    if window.get_key(Key::A) == Action::Press {
+        *camera_pos += -(camera_front.cross(camera_up).normalized() * camera_speed);
+    }
+    if window.get_key(Key::D) == Action::Press {
+        *camera_pos += camera_front.cross(camera_up).normalized() * camera_speed;
+    }
 }
