@@ -172,11 +172,12 @@ pub mod matrix {
             &mut self.components[index]
         }
     }
-    impl<T: NumberLike> MulAssign<T> for Mat4<T> {
-        fn mul_assign(&mut self, rhs: T) {
-            self.components = self.components.map(|arr| arr.map(|v| v * rhs));
+    impl<T: NumberLike> MulAssign<&T> for Mat4<T> {
+        fn mul_assign(&mut self, rhs: &T) {
+            self.components = self.components.map(|arr| arr.map(|v| v * *rhs));
         }
     }
+    forward_move_assignop!([T:NumberLike] impl MulAssign, mul_assign for Mat4<T>, T);
     impl<T: NumberLike> Mul<&T> for &Mat4<T> {
         type Output = Mat4<T>;
         fn mul(self, rhs: &T) -> Self::Output {
@@ -186,8 +187,8 @@ pub mod matrix {
         }
     }
     forward_move_binop!([T:NumberLike] impl Mul, mul for Mat4<T>, T);
-    impl<T: NumberLike> AddAssign<Self> for Mat4<T> {
-        fn add_assign(&mut self, rhs: Self) {
+    impl<T: NumberLike> AddAssign<&Self> for Mat4<T> {
+        fn add_assign(&mut self, rhs: &Self) {
             for y in 0..4 {
                 for x in 0..4 {
                     self.components[y][x] = self.components[y][x] + rhs.components[y][x]
@@ -195,6 +196,7 @@ pub mod matrix {
             }
         }
     }
+    forward_move_assignop!([T:NumberLike] impl AddAssign, add_assign for Mat4<T>, Self);
     impl<T: NumberLike> Add<Self> for &Mat4<T> {
         type Output = Mat4<T>;
         fn add(self, rhs: Self) -> Self::Output {
@@ -236,6 +238,7 @@ pub mod matrix {
             *self = ret;
         }
     }
+    forward_move_assignop!([T:NumberLike] impl MulAssign, mul_assign for Mat4<T>, Self);
     use super::vector::Vector4;
     impl<T: NumberLike> Mul<&Vector4<T>> for &Mat4<T> {
         type Output = Vector4<T>;
@@ -306,14 +309,15 @@ pub mod vector {
         }
     }
     forward_move_binop!([T:NumberLike] impl Mul, mul for Vector4<T>, T);
-    impl<T: NumberLike + MulAssign> MulAssign<T> for Vector4<T> {
-        fn mul_assign(&mut self, rhs: T) {
-            self.x *= rhs;
-            self.y *= rhs;
-            self.z *= rhs;
-            self.w *= rhs;
+    impl<T: NumberLike + MulAssign> MulAssign<&T> for Vector4<T> {
+        fn mul_assign(&mut self, rhs: &T) {
+            self.x *= *rhs;
+            self.y *= *rhs;
+            self.z *= *rhs;
+            self.w *= *rhs;
         }
     }
+    forward_move_assignop!([T:NumberLike + MulAssign] impl MulAssign, mul_assign for Vector4<T>, T);
     impl<T: NumberLike> Div<&T> for &Vector4<T> {
         type Output = Vector4<T>;
 
@@ -327,14 +331,15 @@ pub mod vector {
         }
     }
     forward_move_binop!([T:NumberLike] impl Div, div for Vector4<T>, T);
-    impl<T: NumberLike + DivAssign> DivAssign<T> for Vector4<T> {
-        fn div_assign(&mut self, rhs: T) {
-            self.x /= rhs;
-            self.y /= rhs;
-            self.z /= rhs;
-            self.w /= rhs;
+    impl<T: NumberLike + DivAssign> DivAssign<&T> for Vector4<T> {
+        fn div_assign(&mut self, rhs: &T) {
+            self.x /= *rhs;
+            self.y /= *rhs;
+            self.z /= *rhs;
+            self.w /= *rhs;
         }
     }
+    forward_move_assignop!([T:NumberLike + DivAssign] impl DivAssign, div_assign for Vector4<T>, T);
     impl<T: NumberLike> Add<Self> for &Vector4<T> {
         type Output = Vector4<T>;
 
@@ -348,14 +353,15 @@ pub mod vector {
         }
     }
     forward_move_binop!([T:NumberLike] impl Add, add for Vector4<T>, Vector4<T>);
-    impl<T: NumberLike + AddAssign> AddAssign<T> for Vector4<T> {
-        fn add_assign(&mut self, rhs: T) {
-            self.x += rhs;
-            self.y += rhs;
-            self.z += rhs;
-            self.w += rhs;
+    impl<T: NumberLike + AddAssign> AddAssign<&T> for Vector4<T> {
+        fn add_assign(&mut self, rhs: &T) {
+            self.x += *rhs;
+            self.y += *rhs;
+            self.z += *rhs;
+            self.w += *rhs;
         }
     }
+    forward_move_assignop!([T:NumberLike] impl AddAssign, add_assign for Vector4<T>, T);
     impl<T: NumberLike> Sub<Self> for &Vector4<T> {
         type Output = Vector4<T>;
 
@@ -369,14 +375,15 @@ pub mod vector {
         }
     }
     forward_move_binop!([T:NumberLike] impl Sub, sub for Vector4<T>, Vector4<T>);
-    impl<T: NumberLike + SubAssign> SubAssign<T> for Vector4<T> {
-        fn sub_assign(&mut self, rhs: T) {
-            self.x -= rhs;
-            self.y -= rhs;
-            self.z -= rhs;
-            self.w -= rhs;
+    impl<T: NumberLike + SubAssign> SubAssign<&T> for Vector4<T> {
+        fn sub_assign(&mut self, rhs: &T) {
+            self.x -= *rhs;
+            self.y -= *rhs;
+            self.z -= *rhs;
+            self.w -= *rhs;
         }
     }
+    forward_move_assignop!([T:NumberLike + SubAssign] impl SubAssign, sub_assign for Vector4<T>, T);
     impl<T: NumberLike + Neg> Neg for Vector4<T> {
         type Output = Self;
         fn neg(self) -> Self::Output {
@@ -459,13 +466,14 @@ pub mod vector {
         }
     }
     forward_move_binop!([T:NumberLike] impl Mul, mul for Vector3<T>, T);
-    impl<T: NumberLike + MulAssign> MulAssign<T> for Vector3<T> {
-        fn mul_assign(&mut self, rhs: T) {
-            self.x *= rhs;
-            self.y *= rhs;
-            self.z *= rhs;
+    impl<T: NumberLike + MulAssign> MulAssign<&T> for Vector3<T> {
+        fn mul_assign(&mut self, rhs: &T) {
+            self.x *= *rhs;
+            self.y *= *rhs;
+            self.z *= *rhs;
         }
     }
+    forward_move_assignop!([T:NumberLike + MulAssign] impl MulAssign, mul_assign for Vector3<T>, T);
     impl<T: NumberLike> Div<&T> for &Vector3<T> {
         type Output = Vector3<T>;
 
@@ -478,13 +486,14 @@ pub mod vector {
         }
     }
     forward_move_binop!([T:NumberLike] impl Div, div for Vector3<T>, T);
-    impl<T: NumberLike + DivAssign> DivAssign<T> for Vector3<T> {
-        fn div_assign(&mut self, rhs: T) {
-            self.x /= rhs;
-            self.y /= rhs;
-            self.z /= rhs;
+    impl<T: NumberLike + DivAssign> DivAssign<&T> for Vector3<T> {
+        fn div_assign(&mut self, rhs: &T) {
+            self.x /= *rhs;
+            self.y /= *rhs;
+            self.z /= *rhs;
         }
     }
+    forward_move_assignop!([T:NumberLike + DivAssign] impl DivAssign, div_assign for Vector3<T>, T);
     impl<T: NumberLike> Add<Self> for &Vector3<T> {
         type Output = Vector3<T>;
 
@@ -497,13 +506,14 @@ pub mod vector {
         }
     }
     forward_move_binop!([T:NumberLike] impl Add, add for Vector3<T>, Vector3<T>);
-    impl<T: NumberLike + AddAssign> AddAssign<T> for Vector3<T> {
-        fn add_assign(&mut self, rhs: T) {
-            self.x += rhs;
-            self.y += rhs;
-            self.z += rhs;
+    impl<T: NumberLike + AddAssign> AddAssign<&T> for Vector3<T> {
+        fn add_assign(&mut self, rhs: &T) {
+            self.x += *rhs;
+            self.y += *rhs;
+            self.z += *rhs;
         }
     }
+    forward_move_assignop!([T:NumberLike] impl AddAssign, add_assign for Vector3<T>, T);
     impl<T: NumberLike> Sub<Self> for &Vector3<T> {
         type Output = Vector3<T>;
 
@@ -516,13 +526,14 @@ pub mod vector {
         }
     }
     forward_move_binop!([T:NumberLike] impl Sub, sub for Vector3<T>, Vector3<T>);
-    impl<T: NumberLike + SubAssign> SubAssign<T> for Vector3<T> {
-        fn sub_assign(&mut self, rhs: T) {
-            self.x -= rhs;
-            self.y -= rhs;
-            self.z -= rhs;
+    impl<T: NumberLike + SubAssign> SubAssign<&T> for Vector3<T> {
+        fn sub_assign(&mut self, rhs: &T) {
+            self.x -= *rhs;
+            self.y -= *rhs;
+            self.z -= *rhs;
         }
     }
+    forward_move_assignop!([T:NumberLike + SubAssign] impl SubAssign, sub_assign for Vector3<T>, T);
     impl<T: NumberLike + Neg> Neg for Vector3<T> {
         type Output = Self;
         fn neg(self) -> Self::Output {

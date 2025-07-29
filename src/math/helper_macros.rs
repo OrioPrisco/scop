@@ -48,3 +48,14 @@ macro_rules! forward_move_binop {
         }
     }
 }
+
+macro_rules! forward_move_assignop {
+    ([ $($generic:tt)* ] impl $imp:ident, $method:ident for $t:ty, $u:ty) => {
+        impl<$($generic)*> $imp<$u> for $t {
+            #[inline]
+            fn $method(&mut self, other: $u) {
+                $imp::$method(self, &other);
+            }
+        }
+    }
+}
