@@ -12,6 +12,7 @@ use std::mem;
 use std::ptr;
 
 pub mod math;
+pub mod obj;
 
 pub struct Context;
 
