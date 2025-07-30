@@ -295,6 +295,14 @@ pub mod vector {
                 w: 0.into(),
             }
         }
+        pub fn from_iterator(it : &mut impl Iterator<Item=T>) -> Self {
+            Self {
+                x : it.next().unwrap(),
+                y : it.next().unwrap(),
+                z : it.next().unwrap(),
+                w : it.next().unwrap(),
+            }
+        }
     }
     macro_rules! vector4_op {
         ($($imp:ident, $method:ident, $imp_assign:ident, $method_assign:ident, $op:tt, $op_assign:tt)*) => {$(
@@ -414,6 +422,13 @@ pub mod vector {
                 x: self.y * rhs.z - self.z * rhs.y,
                 y: self.z * rhs.x - self.x * rhs.z,
                 z: self.x * rhs.y - self.y * rhs.x,
+            }
+        }
+        pub fn from_iterator(it : &mut impl Iterator<Item=T>) -> Self {
+            Self {
+                x : it.next().unwrap(),
+                y : it.next().unwrap(),
+                z : it.next().unwrap(),
             }
         }
     }
