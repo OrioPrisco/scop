@@ -11,6 +11,8 @@ use std::io::Read;
 use std::mem;
 use std::ptr;
 
+use obj::Vertex;
+
 pub mod math;
 pub mod obj;
 
@@ -23,8 +25,6 @@ impl Context {
         Context
     }
 }
-
-const ELEMS_PER_VERTEX: usize = 3 + 3 + 2; //pos color texture
 
 #[derive(Debug)]
 pub enum GLError {
@@ -131,7 +131,7 @@ pub mod vao {
                     3,
                     gl::FLOAT,
                     gl::FALSE,
-                    (ELEMS_PER_VERTEX * mem::size_of::<f32>()) as i32,
+                    mem::size_of::<Vertex>() as i32,
                     ptr::null() as *const c_void,
                 );
                 gl::VertexAttribPointer(
@@ -139,7 +139,7 @@ pub mod vao {
                     3,
                     gl::FLOAT,
                     gl::FALSE,
-                    (ELEMS_PER_VERTEX * mem::size_of::<f32>()) as i32,
+                    mem::size_of::<Vertex>() as i32,
                     (mem::size_of::<f32>() * 3) as *const c_void,
                 );
                 gl::VertexAttribPointer(
@@ -147,7 +147,7 @@ pub mod vao {
                     2,
                     gl::FLOAT,
                     gl::FALSE,
-                    (ELEMS_PER_VERTEX * mem::size_of::<f32>()) as i32,
+                    mem::size_of::<Vertex>() as i32,
                     (mem::size_of::<f32>() * 6) as *const c_void,
                 );
                 gl::EnableVertexArrayAttrib(self.raw(), 0);
@@ -182,7 +182,7 @@ pub mod vao {
         pub fn draw_triangles(&self) {
             assert!(self.vao.vbo.is_some());
             assert!(self.vao.vbo.unwrap().borrow().len().is_some());
-            let verts = self.vao.vbo.unwrap().borrow().len().unwrap() / ELEMS_PER_VERTEX;
+            let verts = self.vao.vbo.unwrap().borrow().len().unwrap();
             unsafe { gl::DrawArrays(gl::TRIANGLES, 0, verts as i32) }
         }
         pub fn draw_elements(&self) {
@@ -190,7 +190,7 @@ pub mod vao {
             let ebo = self.vao.ebo.unwrap().borrow();
             let vertices = vbo.len().unwrap();
             let indices = ebo.length();
-            assert!(ebo.max_index() as usize <= vertices / (ELEMS_PER_VERTEX));
+            assert!(ebo.max_index() as usize <= vertices);
             unsafe {
                 gl::DrawElements(gl::TRIANGLES, indices as i32, gl::UNSIGNED_INT, ptr::null())
             };
@@ -222,7 +222,7 @@ pub mod vbo {
         pub fn len(&self) -> Option<usize> {
             self.vertices_len
         }
-        pub fn bind_data(&mut self, vertices: &[f32]) {
+        pub fn bind_data(&mut self, vertices: &[Vertex]) {
             self.vertices_len.replace(vertices.len());
             unsafe {
                 gl::NamedBufferData(

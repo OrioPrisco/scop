@@ -6,6 +6,9 @@ use std::ffi::c_void;
 use std::mem;
 use std::ptr;
 
+use std::fs::File;
+use std::io::BufReader;
+
 use scop::ebo::Ebo;
 use scop::math::matrix::Mat4;
 use scop::math::vector::{Vector3, Vector4};
@@ -13,6 +16,8 @@ use scop::shader::{Shader, ShaderProgram};
 use scop::texture::{self, Texture};
 use scop::vao::{BoundVao, Vao};
 use scop::vbo::Vbo;
+
+use scop::obj;
 
 const SCR_WIDTH: u32 = 800;
 const SCR_HEIGHT: u32 = 600;
@@ -62,7 +67,7 @@ const vertices: &[f32] = &[
 #[rustfmt::skip]
 const cube_positions : &[Vector3<f32>] = &[
     Vector3{x:  0.0, y:  0.0, z:  0.0},
-    Vector3{x:  2.0, y:  5.0, z:-15.0},
+/*    Vector3{x:  2.0, y:  5.0, z:-15.0},
     Vector3{x: -1.5, y: -2.2, z: -2.5},
     Vector3{x: -3.8, y: -2.0, z:-12.3},
     Vector3{x:  2.4, y: -0.4, z: -3.5},
@@ -70,7 +75,7 @@ const cube_positions : &[Vector3<f32>] = &[
     Vector3{x:  1.3, y: -2.0, z: -2.5},
     Vector3{x:  1.5, y:  2.0, z: -2.5},
     Vector3{x:  1.5, y:  0.2, z: -1.5},
-    Vector3{x: -1.3, y:  1.0, z: -1.5},
+    Vector3{x: -1.3, y:  1.0, z: -1.5},*/
 ];
 
 #[rustfmt::skip]
@@ -97,6 +102,10 @@ fn main() {
 
     gl::load_with(|symbol| window.get_proc_address(symbol));
 
+    let mut file = BufReader::new(File::open("teapot.obj").unwrap());
+    let model = obj::parse_obj(file).unwrap();
+    println!("{} {}",model.vertices.len(), model.indices.iter().max().unwrap());
+
     let mut context = scop::Context::new();
     let mut texture_contexts = texture::get_contexts();
     let mut active_texture = texture::get_active_context();
@@ -109,8 +118,8 @@ fn main() {
     bound_vao.bind_vbo(&vbo);
     bound_vao.bind_ebo(&ebo);
 
-    vbo.borrow_mut().bind_data(&vertices);
-    ebo.borrow_mut().bind_data(&indices);
+    vbo.borrow_mut().bind_data(&model.vertices);
+    ebo.borrow_mut().bind_data(&model.indices);
     context = bound_vao.unbind();
 
     let vertex_shader_id = Shader::from_path("./src/vertex.glsl", gl::VERTEX_SHADER).unwrap();
@@ -183,7 +192,7 @@ fn main() {
                 );
             unsafe { shader_program.set_mat(c"model", &model) }.unwrap();
 
-            bound_vao.draw_triangles();
+            bound_vao.draw_elements();
         }
         context = bound_vao.unbind();
 
