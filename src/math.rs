@@ -390,6 +390,7 @@ pub mod vector {
         }
     }
     #[derive(Clone, Copy, Debug)]
+    #[repr(C)]
     pub struct Vector3<T: NumberLike> {
         pub x: T,
         pub y: T,

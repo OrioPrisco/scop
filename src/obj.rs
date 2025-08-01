@@ -40,6 +40,8 @@ impl Display for ErrorType {
     }
 }
 
+#[repr(C)]
+#[derive(Debug)]
 pub struct Vertex {
     pub position: Vector3<f32>,
     pub color: Vector3<f32>,
