@@ -108,6 +108,9 @@ pub mod vao {
             get_error()?;
             Ok(vao)
         }
+        /// # Safety
+        /// Not memory unsafe but using the raw handle in opengl calls manually can desync the state
+        /// of the program with the opengl state, causing unexpected results
         pub unsafe fn raw(&self) -> u32 {
             self.handle
         }
@@ -119,6 +122,9 @@ pub mod vao {
             get_error().unwrap();
             BoundVao { vao, ctx }
         }
+        /// # Safety
+        /// Not memory unsafe but using the raw handle in opengl calls manually can desync the state
+        /// of the program with the opengl state, causing unexpected results
         pub unsafe fn raw(&self) -> GLuint {
             unsafe { self.vao.raw() }
         }
@@ -132,7 +138,7 @@ pub mod vao {
                     gl::FLOAT,
                     gl::FALSE,
                     mem::size_of::<Vertex>() as i32,
-                    ptr::null() as *const c_void,
+                    ptr::null(),
                 );
                 gl::VertexAttribPointer(
                     1,
@@ -222,6 +228,9 @@ pub mod vbo {
         pub fn len(&self) -> Option<usize> {
             self.vertices_len
         }
+        pub fn is_empty(&self) -> bool {
+            self.vertices_len.is_none_or(|l| l == 0)
+        }
         pub fn bind_data(&mut self, vertices: &[Vertex]) {
             self.vertices_len.replace(vertices.len());
             unsafe {
@@ -234,6 +243,9 @@ pub mod vbo {
             };
             get_error().unwrap();
         }
+        /// # Safety
+        /// Not memory unsafe but using the raw handle in opengl calls manually can desync the state
+        /// of the program with the opengl state, causing unexpected results
         pub unsafe fn raw(&self) -> u32 {
             self.handle
         }
@@ -283,6 +295,9 @@ pub mod ebo {
             };
             get_error().unwrap();
         }
+        /// # Safety
+        /// Not memory unsafe but using the raw handle in opengl calls manually can desync the state
+        /// of the program with the opengl state, causing unexpected results
         pub unsafe fn raw(&self) -> u32 {
             self.handle
         }
@@ -378,6 +393,9 @@ pub mod shader {
             let content = unsafe { CString::from_vec_unchecked(content) }; // if you put null bytes in your files: skill issue
             Self::new(&content, shader_type)
         }
+        /// # Safety
+        /// Not memory unsafe but using the raw handle in opengl calls manually can desync the state
+        /// of the program with the opengl state, causing unexpected results
         pub unsafe fn raw(&self) -> GLuint {
             self.0
         }
@@ -413,6 +431,9 @@ pub mod shader {
             unsafe { gl::UseProgram(self.0) };
         }
         //TODO Put this on a BoundPrgram created with a ProgramContext
+        /// # Safety
+        /// Not memory unsafe but this doesn't check that self is the progra, currently in use, so
+        /// it could produce unexpected results
         pub unsafe fn set4f(&self, name: &CStr, x: f32, y: f32, z: f32, w: f32) -> Option<()> {
             let location = unsafe { gl::GetUniformLocation(self.raw(), name.as_ptr()) };
             get_error().unwrap();
@@ -423,6 +444,9 @@ pub mod shader {
             get_error().unwrap();
             Some(())
         }
+        /// # Safety
+        /// Not memory unsafe but this doesn't check that self is the progra, currently in use, so
+        /// it could produce unexpected results
         pub unsafe fn set1i(&self, name: &CStr, int: GLint) -> Option<()> {
             let location = unsafe { gl::GetUniformLocation(self.raw(), name.as_ptr()) };
             get_error().unwrap();
@@ -433,6 +457,9 @@ pub mod shader {
             get_error().unwrap();
             Some(())
         }
+        /// # Safety
+        /// Not memory unsafe but this doesn't check that self is the progra, currently in use, so
+        /// it could produce unexpected results
         pub unsafe fn set_mat(&self, name: &CStr, mat: &Mat4<f32>) -> Option<()> {
             let location = unsafe { gl::GetUniformLocation(self.raw(), name.as_ptr()) };
             get_error().unwrap();
@@ -445,7 +472,9 @@ pub mod shader {
             get_error().unwrap();
             Some(())
         }
-        //TODO: ensure texture outlives Program
+        /// # Safety
+        /// Not memory unsafe but this doesn't check that self is the progra, currently in use, so
+        /// it could produce unexpected results
         pub unsafe fn set_texture(
             &self,
             name: &CStr,
@@ -453,6 +482,9 @@ pub mod shader {
         ) -> Option<()> {
             unsafe { self.set1i(name, texture.context.number as i32) }
         }
+        /// # Safety
+        /// Not memory unsafe but using the raw handle in opengl calls manually can desync the state
+        /// of the program with the opengl state, causing unexpected results
         pub unsafe fn raw(&self) -> GLuint {
             self.0
         }
@@ -517,6 +549,11 @@ pub mod texture {
                 _texture: self,
                 context,
             }
+        }
+    }
+    impl Default for Texture {
+        fn default() -> Self {
+            Self::new()
         }
     }
     impl<'ctx, 'tex> BoundTexture<'ctx, 'tex> {

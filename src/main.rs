@@ -1,17 +1,12 @@
 use glfw::{Action, Context, GlfwReceiver, Key};
 use std::cell::RefCell;
-use std::f32::consts::TAU;
-use std::ffi::CStr;
-use std::ffi::c_void;
-use std::mem;
-use std::ptr;
 
 use std::fs::File;
 use std::io::BufReader;
 
 use scop::ebo::Ebo;
 use scop::math::matrix::Mat4;
-use scop::math::vector::{Vector3, Vector4};
+use scop::math::vector::Vector3;
 use scop::shader::{Shader, ShaderProgram};
 use scop::texture::{self, Texture};
 use scop::vao::{BoundVao, Vao};
@@ -102,9 +97,13 @@ fn main() {
 
     gl::load_with(|symbol| window.get_proc_address(symbol));
 
-    let mut file = BufReader::new(File::open("teapot.obj").unwrap());
+    let file = BufReader::new(File::open("teapot.obj").unwrap());
     let model = obj::parse_obj(file).unwrap();
-    println!("{} {}",model.vertices.len(), model.indices.iter().max().unwrap());
+    println!(
+        "{} {}",
+        model.vertices.len(),
+        model.indices.iter().max().unwrap()
+    );
 
     let mut context = scop::Context::new();
     let mut texture_contexts = texture::get_contexts();
@@ -142,10 +141,26 @@ fn main() {
         .bind_data_from_path("img/awesomeface.png", &mut active_texture)
         .expect("Cannot load texture");
 
-    let mut camera_pos = Vector3 {x: 0.0, y: 0.0, z: 3.0};
-    let j = Vector3 {x: 0.0, y: 1.0, z: 0.0};
-    let camera_target = Vector3 {x: 0.0, y: 0.0, z: 0.0};
-    let up = Vector3 {x: 0.0, y: 1.0, z: 0.0};
+    let mut camera_pos = Vector3 {
+        x: 0.0,
+        y: 0.0,
+        z: 3.0,
+    };
+    let j = Vector3 {
+        x: 0.0,
+        y: 1.0,
+        z: 0.0,
+    };
+    let camera_target = Vector3 {
+        x: 0.0,
+        y: 0.0,
+        z: 0.0,
+    };
+    let up = Vector3 {
+        x: 0.0,
+        y: 1.0,
+        z: 0.0,
+    };
     let mut last_frame = glfw.get_time() as f32;
     let mut projection =
         Mat4::perspective(45.0, (SCR_WIDTH as f32) / (SCR_HEIGHT as f32), 0.1, 100.0);
@@ -204,12 +219,9 @@ fn main() {
 fn process_events(events: &GlfwReceiver<(f64, glfw::WindowEvent)>) -> Option<(i32, i32)> {
     let mut ret = None;
     for (_, event) in glfw::flush_messages(events) {
-        match event {
-            glfw::WindowEvent::FramebufferSize(width, height) => {
-                unsafe { gl::Viewport(0, 0, width, height) };
-                ret = Some((width, height));
-            }
-            _ => {}
+        if let glfw::WindowEvent::FramebufferSize(width, height) = event {
+            unsafe { gl::Viewport(0, 0, width, height) };
+            ret = Some((width, height));
         }
     }
     ret

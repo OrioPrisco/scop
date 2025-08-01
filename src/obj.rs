@@ -154,14 +154,16 @@ pub fn parse_obj(reader: impl BufRead) -> Result<Model, ParseError> {
             _ => return Err(error!(InvalidEntry(line_type.into()))),
         }
     }
-    let vertices : Vec<_> = positions_color.iter().map(|p_c| Vertex {
-        position: p_c.position,
-        color: Vector3::zero(),
-        texture_coordinates: (0.0,0.0),
-    }).collect();
+    let vertices: Vec<_> = positions_color
+        .iter()
+        .map(|p_c| Vertex {
+            position: p_c.position,
+            color: Vector3::zero(),
+            texture_coordinates: (0.0, 0.0),
+        })
+        .collect();
     Ok(Model {
-        vertices : vertices.into(),
+        vertices: vertices.into(),
         indices: indices.into(),
     })
-
 }

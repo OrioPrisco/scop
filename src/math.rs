@@ -1,5 +1,7 @@
-use std::ops::{Add, AddAssign, Div, DivAssign, Index, IndexMut, Mul, MulAssign, Neg, Sub, SubAssign};
 use std::mem;
+use std::ops::{
+    Add, AddAssign, Div, DivAssign, Index, IndexMut, Mul, MulAssign, Neg, Sub, SubAssign,
+};
 
 #[macro_use]
 mod helper_macros;
@@ -95,8 +97,8 @@ pub mod matrix {
         pub fn transpose(mut self) -> Self {
             for y in 0..4 {
                 let comps = self.components.as_mut_slice();
-                let (head, tail) = comps.split_at_mut(y+1);
-                for x in y+1..4 {
+                let (head, tail) = comps.split_at_mut(y + 1);
+                for x in y + 1..4 {
                     mem::swap(&mut head[y][x], &mut tail[x - y - 1][y]);
                 }
             }
@@ -140,7 +142,7 @@ pub mod matrix {
                 ret[1][i] = cam_up[i];
                 ret[2][i] = direction[i];
             }
-            ret * Mat4::translate(&- position)
+            ret * Mat4::translate(&-position)
         }
     }
     impl<T: NumberLike + Tan + ToRadians> Mat4<T> {
@@ -295,12 +297,12 @@ pub mod vector {
                 w: 0.into(),
             }
         }
-        pub fn from_iterator(it : &mut impl Iterator<Item=T>) -> Self {
+        pub fn from_iterator(it: &mut impl Iterator<Item = T>) -> Self {
             Self {
-                x : it.next().unwrap(),
-                y : it.next().unwrap(),
-                z : it.next().unwrap(),
-                w : it.next().unwrap(),
+                x: it.next().unwrap(),
+                y: it.next().unwrap(),
+                z: it.next().unwrap(),
+                w: it.next().unwrap(),
             }
         }
     }
@@ -425,11 +427,11 @@ pub mod vector {
                 z: self.x * rhs.y - self.y * rhs.x,
             }
         }
-        pub fn from_iterator(it : &mut impl Iterator<Item=T>) -> Self {
+        pub fn from_iterator(it: &mut impl Iterator<Item = T>) -> Self {
             Self {
-                x : it.next().unwrap(),
-                y : it.next().unwrap(),
-                z : it.next().unwrap(),
+                x: it.next().unwrap(),
+                y: it.next().unwrap(),
+                z: it.next().unwrap(),
             }
         }
     }
@@ -496,9 +498,9 @@ pub mod vector {
         type Output = Self;
         fn neg(self) -> Self::Output {
             Vector3 {
-                x : -self.x,
-                y : -self.y,
-                z : -self.z,
+                x: -self.x,
+                y: -self.y,
+                z: -self.z,
             }
         }
     }
