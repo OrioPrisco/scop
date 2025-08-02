@@ -196,7 +196,7 @@ pub mod vao {
             let ebo = self.vao.ebo.unwrap().borrow();
             let vertices = vbo.len().unwrap();
             let indices = ebo.length();
-            assert!(ebo.max_index() as usize <= vertices);
+            assert!((ebo.max_index() as usize) < vertices);
             unsafe {
                 gl::DrawElements(gl::TRIANGLES, indices as i32, gl::UNSIGNED_INT, ptr::null())
             };
