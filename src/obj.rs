@@ -80,6 +80,19 @@ fn get_index(array_len: usize, index: isize) -> Option<u32> {
     None
 }
 
+/// Triangulates a polygonal face by using the fan method
+/// Fast and easy but might fail on Concave shapes
+fn fan_triangulation(indices : Vec<u32>) -> Vec<u32> {
+    let mut ret : Vec<u32> = Vec::new();
+    let (first,rest) = indices.as_slice().split_first().unwrap();
+    for indices in rest.windows(2) {
+        ret.push(*first);
+        ret.push(indices[0]);
+        ret.push(indices[1]);
+    }
+    ret
+}
+
 pub fn parse_obj(reader: impl BufRead) -> Result<Model, ParseError> {
     use ErrorType::*;
     let mut positions_color: Vec<VertexData> = Vec::new();
@@ -157,12 +170,14 @@ pub fn parse_obj(reader: impl BufRead) -> Result<Model, ParseError> {
                 }
                 let args: Vec<_> = args.iter().map(|e| e.1.unwrap()).collect();
 
-                if args.len() != 3 {
+                if args.len() < 3 {
                     return Err(error!(InvalidParameterNumber));
                 }
-                //maybe support polygonal faces
-
-                indices.extend(args);
+                if args.len() > 3 {
+                    indices.extend(fan_triangulation(args));
+                } else {
+                    indices.extend(args);
+                }
             }
             ,  // f v1/vt1/vn1 v2/vt2/vn2 v3/vt3/vn3
             "g" | "o" | "mtllib" | "usemtl" => {
