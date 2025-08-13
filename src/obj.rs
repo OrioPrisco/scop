@@ -144,7 +144,7 @@ pub fn parse_obj(reader: impl BufRead) -> Result<Model, ParseError> {
                 indices.extend(args.iter().map(|r| *r.as_ref().unwrap()-1))
             }
             ,  // f v1/vt1/vn1 v2/vt2/vn2 v3/vt3/vn3
-            "g" | "o" | "mtlib" | "usetml" => {
+            "g" | "o" | "mtllib" | "usemtl" => {
                 eprintln!("{index}:Warning {line_type} is not implemented")
             }
             "p" | "l" | "curv" | "curv2D" | "surf" | "s" | "mg" | "parm" | "trim" | "hole"
