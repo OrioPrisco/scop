@@ -95,12 +95,11 @@ pub fn parse_obj(reader: impl BufRead) -> Result<Model, ParseError> {
         match line_type {
             "v" => {
                 let args: Vec<_> = rest
-                    .trim()
                     .split_whitespace()
                     .map(|s| s.parse::<f32>())
                     .collect();
 
-                if let Some(err) = args.iter().enumerate().filter(|r| r.1.is_err()).next() {
+                if let Some(err) = args.iter().enumerate().find(|r| r.1.is_err()) {
                     return Err(error!(InvalidParameter(err.0)));
                 }
                 let mut iter = args.iter().map(|r| *r.as_ref().unwrap());
@@ -128,7 +127,6 @@ pub fn parse_obj(reader: impl BufRead) -> Result<Model, ParseError> {
             "vn" => (), //vn x y z  (may not be unit)
             "f" => {
                 let args: Vec<_> = rest
-                    .trim()
                     .split_whitespace()
                     .map(|s| s.parse::<u32>())
                     .collect();
