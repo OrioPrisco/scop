@@ -63,6 +63,23 @@ struct VertexData {
     color: Option<Vector3<f32>>,
 }
 
+/// returns the 0 based index into an array from a 1 based index
+/// or a negative index from the end of the list
+fn get_index(array_len: usize, index: isize) -> Option<u32> {
+    let array_len : u32 = array_len.try_into().ok()?;
+    if index > 0 {
+        let index = index as u32;
+        if index > array_len {
+            return None;
+        }
+        return Some(index - 1);
+    } else if index < 0 {
+        let from_end : u32 = (-index).try_into().ok()?;
+        return array_len.checked_sub(from_end);
+    }
+    None
+}
+
 pub fn parse_obj(reader: impl BufRead) -> Result<Model, ParseError> {
     use ErrorType::*;
     let mut positions_color: Vec<VertexData> = Vec::new();
@@ -128,20 +145,24 @@ pub fn parse_obj(reader: impl BufRead) -> Result<Model, ParseError> {
             "f" => {
                 let args: Vec<_> = rest
                     .split_whitespace()
-                    .map(|s| s.parse::<u32>())
+                    .map(|s| s.parse::<isize>().map(|s| (s, get_index(positions_color.len(), s)) ))
                     .collect();
 
-                if let Some(err) = args.iter().enumerate().find(|r| match r.1 {
-                    Err(_) => true,
-                    Ok(n) => *n == 0,
-                }) {
+                if let Some(err) = args.iter().enumerate().find(|r| r.1.is_err()) {
                     return Err(error!(InvalidParameter(err.0)));
                 }
+                let args: Vec<_> = args.iter().map(|e| e.as_ref().unwrap()).collect();
+                if let Some(err) = args.iter().find(|r| r.1.is_none()) {
+                    return Err(error!(IndexOutOfBound(err.0)));
+                }
+                let args: Vec<_> = args.iter().map(|e| e.1.unwrap()).collect();
 
                 if args.len() != 3 {
                     return Err(error!(InvalidParameterNumber));
-                }//maybe support polygonal faces
-                indices.extend(args.iter().map(|r| *r.as_ref().unwrap()-1))
+                }
+                //maybe support polygonal faces
+
+                indices.extend(args);
             }
             ,  // f v1/vt1/vn1 v2/vt2/vn2 v3/vt3/vn3
             "g" | "o" | "mtllib" | "usemtl" => {
