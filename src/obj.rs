@@ -67,7 +67,7 @@ struct VertexData {
 /// returns the 0 based index into an array from a 1 based index
 /// or a negative index from the end of the list
 fn get_index(array_len: usize, index: isize) -> Option<u32> {
-    let array_len : u32 = array_len.try_into().ok()?;
+    let array_len: u32 = array_len.try_into().ok()?;
     if index > 0 {
         let index = index as u32;
         if index > array_len {
@@ -75,7 +75,7 @@ fn get_index(array_len: usize, index: isize) -> Option<u32> {
         }
         return Some(index - 1);
     } else if index < 0 {
-        let from_end : u32 = (-index).try_into().ok()?;
+        let from_end: u32 = (-index).try_into().ok()?;
         return array_len.checked_sub(from_end);
     }
     None
@@ -83,9 +83,9 @@ fn get_index(array_len: usize, index: isize) -> Option<u32> {
 
 /// Triangulates a polygonal face by using the fan method
 /// Fast and easy but might fail on Concave shapes
-fn fan_triangulation(indices : Vec<u32>) -> Vec<u32> {
-    let mut ret : Vec<u32> = Vec::new();
-    let (first,rest) = indices.as_slice().split_first().unwrap();
+fn fan_triangulation(indices: Vec<u32>) -> Vec<u32> {
+    let mut ret: Vec<u32> = Vec::new();
+    let (first, rest) = indices.as_slice().split_first().unwrap();
     for indices in rest.windows(2) {
         ret.push(*first);
         ret.push(indices[0]);
