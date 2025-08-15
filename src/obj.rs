@@ -1,4 +1,5 @@
 use super::math::vector::Vector3;
+use std::collections::HashMap;
 use std::fmt::{self, Display};
 use std::io::{BufRead, Error as IOError};
 
@@ -97,9 +98,10 @@ pub fn parse_obj(reader: impl BufRead) -> Result<Model, ParseError> {
     use ErrorType::*;
     let mut positions_color: Vec<VertexData> = Vec::new();
     let mut normals: Vec<Vector3<f32>> = Vec::new();
-    let mut texture_coords: Vec<Vector3<f32>> = Vec::new();
-    let mut indices: Vec<u32> = Vec::new();
+    let mut texture_coords: Vec<(f32, f32)> = Vec::new();
+    let mut indices: Vec<(u32, Option<u32>)> = Vec::new(); // position_color, texture_coord
 
+    //file parsing
     for (index, line) in reader.lines().enumerate() {
         let line = line.map_err(|err| ParseError {
             line: None,
@@ -168,16 +170,16 @@ pub fn parse_obj(reader: impl BufRead) -> Result<Model, ParseError> {
                 if let Some(err) = args.iter().find(|r| r.1.is_none()) {
                     return Err(error!(IndexOutOfBound(err.0)));
                 }
-                let args: Vec<_> = args.iter().map(|e| e.1.unwrap()).collect();
+                let mut args: Vec<_> = args.iter().map(|e| e.1.unwrap()).collect();
 
                 if args.len() < 3 {
                     return Err(error!(InvalidParameterNumber));
                 }
                 if args.len() > 3 {
-                    indices.extend(fan_triangulation(args));
-                } else {
-                    indices.extend(args);
+                    args = fan_triangulation(args);
                 }
+                //TODO: parse texture indices
+                indices.extend(args.iter().map(|i| (*i,None)));
             }
             ,  // f v1/vt1/vn1 v2/vt2/vn2 v3/vt3/vn3
             "g" | "o" | "mtllib" | "usemtl" => {
@@ -188,16 +190,36 @@ pub fn parse_obj(reader: impl BufRead) -> Result<Model, ParseError> {
             _ => return Err(error!(InvalidEntry(line_type.into()))),
         }
     }
-    let vertices: Vec<_> = positions_color
-        .iter()
-        .map(|p_c| Vertex {
-            position: p_c.position,
-            color: Vector3::zero(),
-            texture_coordinates: (0.0, 0.0),
-        })
-        .collect();
+    //normalization
+    let mut verts_index: HashMap<(u32, Option<u32>), u32> = HashMap::with_capacity(indices.len());
+    let mut fixed_indices: Vec<u32> = Vec::with_capacity(indices.len());
+    let mut fixed_verts: Vec<Vertex> = Vec::with_capacity(positions_color.len());
+    for indices in indices {
+        if let Some(vert_index) = verts_index.get(&indices) {
+            fixed_indices.push(*vert_index);
+        } else {
+            verts_index.insert(indices, fixed_verts.len() as u32);
+            fixed_indices.push(fixed_verts.len() as u32);
+            let (pos_index, text_index) = indices;
+            let pos_color = &positions_color[pos_index as usize];
+            fixed_verts.push(Vertex {
+                position: pos_color.position,
+                color: pos_color.color.unwrap_or(Vector3::zero()),
+                texture_coordinates: text_index.map(|i| texture_coords[i as usize]).unwrap_or(
+                    if texture_coords.is_empty() {
+                        (
+                            pos_color.position.x + pos_color.position.z,
+                            pos_color.position.y,
+                        )
+                    } else {
+                        (0.0, 0.0)
+                    },
+                ),
+            });
+        }
+    }
     Ok(Model {
-        vertices: vertices.into(),
-        indices: indices.into(),
+        vertices: fixed_verts.into(),
+        indices: fixed_indices.into(),
     })
 }
