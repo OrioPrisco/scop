@@ -191,6 +191,25 @@ pub fn parse_obj(reader: impl BufRead) -> Result<Model, ParseError> {
         }
     }
     //normalization
+    let min_coord = positions_color
+        .iter()
+        .map(|p_c| p_c.position)
+        .reduce(|a, b| Vector3 {
+            x: a.x.min(b.x),
+            y: a.y.min(b.y),
+            z: a.z.min(b.z),
+        })
+        .unwrap_or(Vector3::zero());
+    let max_coord = positions_color
+        .iter()
+        .map(|p_c| p_c.position)
+        .reduce(|a, b| Vector3 {
+            x: a.x.max(b.x),
+            y: a.y.max(b.y),
+            z: a.z.max(b.z),
+        })
+        .unwrap_or(Vector3::zero());
+    let middle_coord = (min_coord + max_coord) / 2.0;
     let mut verts_index: HashMap<(u32, Option<u32>), u32> = HashMap::with_capacity(indices.len());
     let mut fixed_indices: Vec<u32> = Vec::with_capacity(indices.len());
     let mut fixed_verts: Vec<Vertex> = Vec::with_capacity(positions_color.len());
@@ -203,7 +222,7 @@ pub fn parse_obj(reader: impl BufRead) -> Result<Model, ParseError> {
             let (pos_index, text_index) = indices;
             let pos_color = &positions_color[pos_index as usize];
             fixed_verts.push(Vertex {
-                position: pos_color.position,
+                position: pos_color.position - middle_coord,
                 color: pos_color.color.unwrap_or(Vector3::zero()),
                 texture_coordinates: text_index.map(|i| texture_coords[i as usize]).unwrap_or(
                     if texture_coords.is_empty() {
