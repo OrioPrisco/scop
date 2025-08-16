@@ -525,4 +525,76 @@ pub mod vector {
             }
         }
     }
+    #[derive(Clone, Copy, Debug)]
+    pub struct Vector2<T: NumberLike> {
+        pub x: T,
+        pub y: T,
+    }
+    impl<T: NumberLike> Vector2<T> {
+        pub fn cross(self, other: Self) -> T {
+            self.x * other.y - self.y * other.x
+        }
+        pub fn dot(self, other: Self) -> T {
+            self.x * other.x + self.y * other.y
+        }
+    }
+    impl<T: NumberLike + Sqrt> Vector2<T> {
+        pub fn norm(&self) -> T {
+            (self.x * self.x + self.y * self.y).sqrt()
+        }
+    }
+    macro_rules! vector2_op {
+        ($($imp:ident, $method:ident, $imp_assign:ident, $method_assign:ident, $op:tt, $op_assign:tt)*) => {$(
+            impl <T: NumberLike> $imp<&T> for &Vector2<T> {
+                type Output = Vector2<T>;
+
+                fn $method(self, rhs: &T) -> Self::Output {
+                    Vector2 {
+                        x: self.x $op *rhs,
+                        y: self.y $op *rhs,
+                    }
+                }
+            }
+            forward_move_binop!([T:NumberLike] impl $imp, $method for Vector2<T>, T);
+            impl<T: NumberLike + $imp_assign> $imp_assign<&T> for Vector2<T> {
+                fn $method_assign(&mut self, rhs: &T) {
+                    self.x $op_assign *rhs;
+                    self.y $op_assign *rhs;
+                }
+            }
+            forward_move_assignop!([T:NumberLike + $imp_assign] impl $imp_assign, $method_assign for Vector2<T>, T);
+        )*}
+    }
+    vector2_op!(
+        Add, add, AddAssign, add_assign, +, +=
+        Sub, sub, SubAssign, sub_assign, -, -=
+        Mul, mul, MulAssign, mul_assign, *, *=
+        Div, div, DivAssign, div_assign, /, /=
+    );
+    macro_rules! vector2_self_op {
+        ($($imp:ident, $method:ident, $imp_assign:ident, $method_assign:ident, $op:tt, $op_assign:tt)*) => {$(
+            impl <T: NumberLike> $imp<Self> for &Vector2<T> {
+                type Output = Vector2<T>;
+
+                fn $method(self, rhs: Self) -> Self::Output {
+                    Vector2 {
+                        x: self.x $op rhs.x,
+                        y: self.y $op rhs.y,
+                    }
+                }
+            }
+            forward_move_binop!([T:NumberLike] impl $imp, $method for Vector2<T>, Vector2<T>);
+            impl<T: NumberLike + $imp_assign> $imp_assign<&Self> for Vector2<T> {
+                fn $method_assign(&mut self, rhs: &Self) {
+                    self.x $op_assign rhs.x;
+                    self.y $op_assign rhs.y;
+                }
+            }
+            forward_move_assignop!([T:NumberLike + $imp_assign] impl $imp_assign, $method_assign for Vector2<T>, Vector2<T>);
+        )*}
+    }
+    vector2_self_op!(
+        Add, add, AddAssign, add_assign, +, +=
+        Sub, sub, SubAssign, sub_assign, -, -=
+    );
 }
