@@ -190,7 +190,19 @@ pub fn parse_obj(reader: impl BufRead) -> Result<Model, ParseError> {
             "g" | "o" | "mtllib" | "usemtl" => {
                 eprintln!("{index}:Warning {line_type} is not implemented")
             }
-            "p" | "l" | "curv" | "curv2D" | "surf" | "s" | "mg" | "parm" | "trim" | "hole"
+            "s" => {
+                let args: Vec<_> = rest.split_whitespace().collect();
+                if args.len() > 1 {
+                    return Err(error!(InvalidParameterNumber));
+                }
+                match args[0] {
+                    "off" => (),
+                    "on" => return Err(error!(Unsupported("s on".into()))),
+                    _ => return Err(error!(InvalidEntry(line))),
+                }
+
+            }
+            "p" | "l" | "curv" | "curv2D" | "surf" | "mg" | "parm" | "trim" | "hole"
             | "scrv" | "sp" | "end" | "con" => return Err(error!(Unsupported(line_type.into()))),
             _ => return Err(error!(InvalidEntry(line_type.into()))),
         }
