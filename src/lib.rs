@@ -99,6 +99,11 @@ pub fn run(config: Config) -> Result<(), Box<dyn Error>> {
         y: 1.0,
         z: 0.0,
     };
+    let ijk = Vector3 {
+        x: 1.0,
+        y: 1.0,
+        z: 1.0,
+    };
     let camera_target = Vector3 {
         x: 0.0,
         y: 0.0,
@@ -110,9 +115,9 @@ pub fn run(config: Config) -> Result<(), Box<dyn Error>> {
         z: 0.0,
     };
     let mut last_frame = glfw.get_time() as f32;
+    let mut scale = 1.0;
     let mut projection =
         Mat4::perspective(45.0, (SCR_WIDTH as f32) / (SCR_HEIGHT as f32), 0.1, 100.0);
-    let model = Mat4::identity();
     unsafe { gl::Enable(gl::DEPTH_TEST) };
     while !window.should_close() {
         if let Some((width, height)) = process_events(&events) {
@@ -131,9 +136,17 @@ pub fn run(config: Config) -> Result<(), Box<dyn Error>> {
         last_frame = time_value;
         let camera_front = camera_target - camera_pos;
 
-        process_input(&mut window, delta_time, &mut camera_pos, &camera_front, &up);
+        process_input(
+            &mut window,
+            delta_time,
+            &mut camera_pos,
+            &camera_front,
+            &up,
+            &mut scale,
+        );
 
         let view = Mat4::lookat(camera_pos, camera_target, up);
+        let model = Mat4::rotate(&j, time_value / 6.0) * Mat4::scale(&(ijk * scale));
 
         shader_program.use_program();
         unsafe { shader_program.set_mat(c"view", &view) }.ok_or("Cannot set view uniform")?;
@@ -170,6 +183,7 @@ fn process_input(
     camera_pos: &mut Vector3<f32>,
     camera_front: &Vector3<f32>,
     camera_up: &Vector3<f32>,
+    scale: &mut f32,
 ) {
     if window.get_key(Key::Escape) == Action::Press {
         window.set_should_close(true)
@@ -187,5 +201,19 @@ fn process_input(
     }
     if window.get_key(Key::D) == Action::Press {
         *camera_pos += camera_front.cross(camera_up).normalized() * camera_speed;
+    }
+    let camera_right = camera_front.cross(camera_up);
+    let camera_up = camera_right.cross(camera_front);
+    if window.get_key(Key::Space) == Action::Press {
+        *camera_pos += camera_up.normalized() * camera_speed;
+    }
+    if window.get_key(Key::LeftShift) == Action::Press {
+        *camera_pos -= camera_up.normalized() * camera_speed;
+    }
+    if window.get_key(Key::KpAdd) == Action::Press {
+        *scale += 1.01 * delta_time;
+    }
+    if window.get_key(Key::KpSubtract) == Action::Press {
+        *scale -= 1.01 * delta_time;
     }
 }
