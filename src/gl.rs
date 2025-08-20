@@ -13,6 +13,8 @@ use std::ptr;
 
 use crate::obj::Vertex;
 
+pub use gl::*;
+
 pub struct Context;
 
 //Empty struct that needs to be borrwed to bind a vao/vbo
