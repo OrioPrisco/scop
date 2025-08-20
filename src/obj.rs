@@ -1,5 +1,6 @@
 use super::math::vector::{Vector2, Vector3};
 use std::collections::HashMap;
+use std::error::Error;
 use std::f32::consts::PI;
 use std::fmt::{self, Display};
 use std::io::{BufRead, Error as IOError};
@@ -21,6 +22,9 @@ impl Display for ParseError {
         }
     }
 }
+
+impl Error for ParseError {}
+
 #[derive(Debug)]
 pub enum ErrorType {
     IOError(IOError),
