@@ -71,25 +71,29 @@ struct VertexData {
 
 /// returns the 0 based index into an array from a 1 based index
 /// or a negative index from the end of the list
-fn get_index(array_len: usize, index: isize) -> Option<u32> {
-    let array_len: u32 = array_len.try_into().ok()?;
+fn get_index(array_len: usize, index: isize) -> Result<u32, ErrorType> {
+    let array_len: u32 = array_len
+        .try_into()
+        .map_err(|_| ErrorType::IndexOutOfBound(index))?;
     if index > 0 {
         let index = index as u32;
         if index > array_len {
-            return None;
+            return Err(ErrorType::IndexOutOfBound(index as isize));
         }
-        return Some(index - 1);
+        return Ok(index - 1);
     } else if index < 0 {
-        let from_end: u32 = (-index).try_into().ok()?;
-        return array_len.checked_sub(from_end);
+        let from_end: u32 = (-index).try_into().unwrap();
+        return array_len
+            .checked_sub(from_end)
+            .ok_or(ErrorType::IndexOutOfBound(index));
     }
-    None
+    Err(ErrorType::IndexOutOfBound(index))
 }
 
 /// Triangulates a polygonal face by using the fan method
 /// Fast and easy but might fail on Concave shapes
-fn fan_triangulation(indices: Vec<u32>) -> Vec<u32> {
-    let mut ret: Vec<u32> = Vec::new();
+fn fan_triangulation(indices: Vec<FaceInfo>) -> Vec<FaceInfo> {
+    let mut ret: Vec<FaceInfo> = Vec::new();
     let (first, rest) = indices.as_slice().split_first().unwrap();
     for indices in rest.windows(2) {
         ret.push(*first);
@@ -99,12 +103,70 @@ fn fan_triangulation(indices: Vec<u32>) -> Vec<u32> {
     ret
 }
 
+#[derive(Debug, Clone, Copy)]
+struct FaceInfoRaw {
+    pub vertex: isize,
+    pub texture: Option<isize>,
+    pub normal: Option<isize>,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+struct FaceInfo {
+    pub vertex: u32,
+    pub texture: Option<u32>,
+    pub normal: Option<u32>,
+}
+
+impl FaceInfoRaw {
+    pub fn same_shape(&self, other: &Self) -> bool {
+        (self.texture.is_some() == other.texture.is_some())
+            && (self.normal.is_some() == other.normal.is_some())
+    }
+    pub fn parse(s: &str) -> Option<Self> {
+        let mut nums = s.split("/");
+        let vertex = nums.next()?.parse::<isize>().ok()?;
+        let texture = match nums.next() {
+            None => None,
+            Some("") => None,
+            Some(number) => Some(number.parse::<isize>().ok()?),
+        };
+        let normal = match nums.next() {
+            None => None,
+            Some("") => None,
+            Some(number) => Some(number.parse::<isize>().ok()?),
+        };
+        Some(Self {
+            vertex,
+            texture,
+            normal,
+        })
+    }
+    pub fn get_indices(
+        self,
+        vertices_len: usize,
+        textures_size: usize,
+        normals_size: usize,
+    ) -> Result<FaceInfo, ErrorType> {
+        Ok(FaceInfo {
+            vertex: get_index(vertices_len, self.vertex)?,
+            texture: self
+                .texture
+                .map(|i| get_index(textures_size, i))
+                .transpose()?,
+            normal: self
+                .normal
+                .map(|i| get_index(normals_size, i))
+                .transpose()?,
+        })
+    }
+}
+
 pub fn parse_obj(reader: impl BufRead) -> Result<Model, ParseError> {
     use ErrorType::*;
     let mut positions_color: Vec<VertexData> = Vec::new();
     let mut normals: Vec<Vector3<f32>> = Vec::new();
     let mut texture_coords: Vec<(f32, f32)> = Vec::new();
-    let mut indices: Vec<(u32, Option<u32>)> = Vec::new(); // position_color, texture_coord
+    let mut indices: Vec<FaceInfo> = Vec::new();
 
     //file parsing
     for (index, line) in reader.lines().enumerate() {
@@ -163,28 +225,26 @@ pub fn parse_obj(reader: impl BufRead) -> Result<Model, ParseError> {
             "vt" => (), // vt u [v, w]
             "vn" => (), //vn x y z  (may not be unit)
             "f" => {
-                let args: Vec<_> = rest
+                let args : Vec<_> = rest
                     .split_whitespace()
-                    .map(|s| s.parse::<isize>().map(|s| (s, get_index(positions_color.len(), s)) ))
-                    .collect();
-
-                if let Some(err) = args.iter().enumerate().find(|r| r.1.is_err()) {
-                    return Err(error!(InvalidParameter(err.0)));
+                    .enumerate().map (
+                    |(i,s)|
+                        FaceInfoRaw::parse(s)
+                        .ok_or(error!(InvalidParameter(i)))
+                    ).collect::<Result<_,_>>()?;
+                if let Some(bad) = args.iter().enumerate().find(|(_i,f)| !f.same_shape(&args[0])) {
+                    return Err(error!(InvalidParameter(bad.0)));
                 }
-                let args: Vec<_> = args.iter().map(|e| e.as_ref().unwrap()).collect();
-                if let Some(err) = args.iter().find(|r| r.1.is_none()) {
-                    return Err(error!(IndexOutOfBound(err.0)));
-                }
-                let mut args: Vec<_> = args.iter().map(|e| e.1.unwrap()).collect();
 
+                let mut args: Vec<_> = args.iter().map(|f|f.get_indices(positions_color.len(), texture_coords.len(), normals.len()))
+                .collect::<Result<_,_>>().map_err(|e| error!(e))?;
                 if args.len() < 3 {
                     return Err(error!(InvalidParameterNumber));
                 }
                 if args.len() > 3 {
                     args = fan_triangulation(args);
                 }
-                //TODO: parse texture indices
-                indices.extend(args.iter().map(|i| (*i,None)));
+                indices.extend(args);
             }
             ,  // f v1/vt1/vn1 v2/vt2/vn2 v3/vt3/vn3
             "g" | "o" | "mtllib" | "usemtl" => {
@@ -231,7 +291,7 @@ pub fn parse_obj(reader: impl BufRead) -> Result<Model, ParseError> {
         x: middle_coord.x,
         y: middle_coord.z,
     };
-    let mut verts_index: HashMap<(u32, Option<u32>), u32> = HashMap::with_capacity(indices.len());
+    let mut verts_index: HashMap<FaceInfo, u32> = HashMap::with_capacity(indices.len());
     let mut fixed_indices: Vec<u32> = Vec::with_capacity(indices.len());
     let mut fixed_verts: Vec<Vertex> = Vec::with_capacity(positions_color.len());
     for indices in indices {
@@ -240,7 +300,8 @@ pub fn parse_obj(reader: impl BufRead) -> Result<Model, ParseError> {
         } else {
             verts_index.insert(indices, fixed_verts.len() as u32);
             fixed_indices.push(fixed_verts.len() as u32);
-            let (pos_index, text_index) = indices;
+            let pos_index = indices.vertex;
+            let text_index = indices.texture;
             let pos_color = &positions_color[pos_index as usize];
             let position = pos_color.position;
             let pos_2d = Vector2 {
