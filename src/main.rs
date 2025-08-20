@@ -4,13 +4,13 @@ use std::cell::RefCell;
 use std::fs::File;
 use std::io::BufReader;
 
-use scop::ebo::Ebo;
+use scop::gl::ebo::Ebo;
+use scop::gl::shader::{Shader, ShaderProgram};
+use scop::gl::texture::{self, Texture};
+use scop::gl::vao::{BoundVao, Vao};
+use scop::gl::vbo::Vbo;
 use scop::math::matrix::Mat4;
 use scop::math::vector::Vector3;
-use scop::shader::{Shader, ShaderProgram};
-use scop::texture::{self, Texture};
-use scop::vao::{BoundVao, Vao};
-use scop::vbo::Vbo;
 
 use scop::obj;
 
@@ -105,7 +105,7 @@ fn main() {
         model.indices.iter().max().unwrap()
     );
 
-    let mut context = scop::Context::new();
+    let mut context = scop::gl::Context::new();
     let mut texture_contexts = texture::get_contexts();
     let mut active_texture = texture::get_active_context();
 
