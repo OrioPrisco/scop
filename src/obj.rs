@@ -269,7 +269,7 @@ fn parse_one_line(
         }
         ,  // f v1/vt1/vn1 v2/vt2/vn2 v3/vt3/vn3
         "g" | "o" | "mtllib" | "usemtl" => {
-            eprintln!("{index}:Warning {line_type} is not implemented")
+            return Err(error!(Unsupported(line_type.into())));
         }
         "s" => {
             let args: Vec<_> = rest.split_whitespace().collect();
@@ -290,7 +290,7 @@ fn parse_one_line(
     Ok(())
 }
 
-pub fn parse_obj(reader: impl BufRead) -> Result<Model, ParseError> {
+pub fn parse_obj(reader: impl BufRead, ignore_unimplemented: bool) -> Result<Model, ParseError> {
     let mut positions_color: Vec<VertexData> = Vec::new();
     let mut normals: Vec<Vector3<f32>> = Vec::new();
     let mut texture_coords: Vec<(f32, f32)> = Vec::new();
@@ -311,9 +311,17 @@ pub fn parse_obj(reader: impl BufRead) -> Result<Model, ParseError> {
             &mut texture_coords,
             &mut indices,
         );
-        match res {
-            Ok(()) => (),
-            Err(err) => return Err(err),
+        if let Some(err) = res.err() {
+            match &err.err_type {
+                ErrorType::Unsupported(_) => {
+                    if ignore_unimplemented {
+                        eprintln!("{err}");
+                    } else {
+                        return Err(err);
+                    }
+                }
+                _ => return Err(err),
+            }
         }
     }
     //normalization

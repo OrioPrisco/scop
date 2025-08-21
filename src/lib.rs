@@ -22,17 +22,26 @@ const SCR_HEIGHT: u32 = 600;
 
 pub struct Config {
     path: String,
+    ignore_unimplemented: bool,
 }
 
 impl Config {
-    pub fn build(mut args: impl Iterator<Item = String>) -> Result<Config, &'static str> {
+    pub fn build(mut args: impl Iterator<Item = String>) -> Result<Config, String> {
         args.next();
 
         let path = match args.next() {
             Some(arg) => arg,
-            None => return Err("No query String"),
+            None => return Err("No query String".into()),
         };
-        Ok(Config { path })
+        let ignore_unimplemented = match args.next().as_deref() {
+            None => true,
+            Some("--no-ignore-unimplemented") => false,
+            Some(x) => return Err(format!("Unknown argument : {x}")),
+        };
+        Ok(Config {
+            path,
+            ignore_unimplemented,
+        })
     }
 }
 
@@ -55,7 +64,7 @@ pub fn run(config: Config) -> Result<(), Box<dyn Error>> {
     gl::load_with(|symbol| window.get_proc_address(symbol));
 
     let file = BufReader::new(File::open(config.path)?);
-    let model = obj::parse_obj(file)?;
+    let model = obj::parse_obj(file, config.ignore_unimplemented)?;
 
     let mut context = gl::Context::new();
     let mut texture_contexts = texture::get_contexts();
