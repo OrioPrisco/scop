@@ -602,7 +602,8 @@ pub mod texture {
             path: &str,
             active_context: &mut ActiveContext,
         ) -> image::error::ImageResult<()> {
-            let img = image::ImageReader::open(path)?.decode()?;
+            let mut img = image::ImageReader::open(path)?.decode()?;
+            img.apply_orientation(image::metadata::Orientation::FlipVertical);
             let img = match img {
                 image::DynamicImage::ImageRgba8(img) => img,
                 image => image.to_rgba8(),
