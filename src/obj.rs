@@ -220,8 +220,35 @@ pub fn parse_obj(reader: impl BufRead) -> Result<Model, ParseError> {
                     _ => return Err(error!(InvalidParameterNumber)),
                 }
             }
-            "vt" => (), // vt u [v, w]
-            "vn" => (), //vn x y z  (may not be unit)
+            "vt" => {
+                let args: Vec<_> = rest
+                    .split_whitespace()
+                    .enumerate()
+                    .map(|(i,s)| s.parse::<f32>().map_err(|_| error!(InvalidParameter(i))))
+                    .collect::<Result<_,_>>()?;
+                let mut iter = args.iter().cloned();
+                match args.len() {
+                    1|2 => texture_coords.push((iter.next().unwrap(), iter.next().unwrap_or(0.0))),
+                    3 => {
+                        texture_coords.push((iter.next().unwrap(), iter.next().unwrap()));
+                        eprintln!("{index}:Texture w coordinate ignored");
+                    },
+                    _ => return Err(error!(InvalidParameterNumber)),
+                }
+
+            }, // vt u [v, w]
+            "vn" => {
+                let args: Vec<_> = rest
+                    .split_whitespace()
+                    .enumerate()
+                    .map(|(i,s)| s.parse::<f32>().map_err(|_| error!(InvalidParameter(i))))
+                    .collect::<Result<_,_>>()?;
+                if args.len() != 3 {
+                    return Err(error!(InvalidParameterNumber));
+                }
+                let mut iter = args.iter().cloned();
+                normals.push(Vector3::from_iterator(&mut iter));
+            }, //vn x y z  (may not be unit)
             "f" => {
                 let args : Vec<_> = rest
                     .split_whitespace()
