@@ -161,8 +161,136 @@ impl FaceInfoRaw {
     }
 }
 
-pub fn parse_obj(reader: impl BufRead) -> Result<Model, ParseError> {
+fn parse_one_line(
+    index: usize,
+    line: String,
+
+    positions_color: &mut Vec<VertexData>,
+    normals: &mut Vec<Vector3<f32>>,
+    texture_coords: &mut Vec<(f32, f32)>,
+    indices: &mut Vec<FaceInfo>,
+) -> Result<(), ParseError> {
     use ErrorType::*;
+    macro_rules! error {
+        ($err:expr) => {
+            ParseError {
+                line: Some(line.clone()),
+                line_no: index,
+                err_type: $err,
+            }
+        };
+    }
+    if line.starts_with("#") {
+        return Ok(());
+    }
+    if line.is_empty() {
+        return Ok(());
+    }
+    let (line_type, rest) = line.split_once(' ').ok_or(error!(InvalidLine))?;
+    match line_type {
+        "v" => {
+            let args: Vec<_> = rest
+                .split_whitespace()
+                .enumerate()
+                .map(|(i,s)| s.parse::<f32>().map_err(|_| error!(InvalidParameter(i))))
+                .collect::<Result<_,_>>()?;
+
+            let mut iter = args.iter().cloned();
+            match args.len() {
+                3 => positions_color.push(VertexData {
+                    position: Vector3::from_iterator(&mut iter),
+                    color: None,
+                }), // x y z
+                4 => {
+                    // x y z w
+                    positions_color.push(VertexData {
+                        position: Vector3::from_iterator(&mut iter),
+                        color: None,
+                    }); // x y z w
+                    eprintln!("{index}: w component ignored");
+                }
+                6 => positions_color.push(VertexData {
+                    position: Vector3::from_iterator(&mut iter),
+                    color: Some(Vector3::from_iterator(&mut iter)),
+                }), // x y z r g b
+                _ => return Err(error!(InvalidParameterNumber)),
+            }
+        }
+        "vt" => {
+            let args: Vec<_> = rest
+                .split_whitespace()
+                .enumerate()
+                .map(|(i,s)| s.parse::<f32>().map_err(|_| error!(InvalidParameter(i))))
+                .collect::<Result<_,_>>()?;
+            let mut iter = args.iter().cloned();
+            match args.len() {
+                1|2 => texture_coords.push((iter.next().unwrap(), iter.next().unwrap_or(0.0))),
+                3 => {
+                    texture_coords.push((iter.next().unwrap(), iter.next().unwrap()));
+                    eprintln!("{index}:Texture w coordinate ignored");
+                },
+                _ => return Err(error!(InvalidParameterNumber)),
+            }
+
+        }, // vt u [v, w]
+        "vn" => {
+            let args: Vec<_> = rest
+                .split_whitespace()
+                .enumerate()
+                .map(|(i,s)| s.parse::<f32>().map_err(|_| error!(InvalidParameter(i))))
+                .collect::<Result<_,_>>()?;
+            if args.len() != 3 {
+                return Err(error!(InvalidParameterNumber));
+            }
+            let mut iter = args.iter().cloned();
+            normals.push(Vector3::from_iterator(&mut iter));
+        }, //vn x y z  (may not be unit)
+        "f" => {
+            let args : Vec<_> = rest
+                .split_whitespace()
+                .enumerate().map (
+                |(i,s)|
+                    FaceInfoRaw::parse(s)
+                    .ok_or(error!(InvalidParameter(i)))
+                ).collect::<Result<_,_>>()?;
+            if let Some(bad) = args.iter().enumerate().find(|(_i,f)| !f.same_shape(&args[0])) {
+                return Err(error!(InvalidParameter(bad.0)));
+            }
+
+            let mut args: Vec<_> = args.iter().map(|f|f.get_indices(positions_color.len(), texture_coords.len(), normals.len()))
+            .collect::<Result<_,_>>().map_err(|e| error!(e))?;
+            if args.len() < 3 {
+                return Err(error!(InvalidParameterNumber));
+            }
+            if args.len() > 3 {
+                args = fan_triangulation(args);
+            }
+            indices.extend(args);
+        }
+        ,  // f v1/vt1/vn1 v2/vt2/vn2 v3/vt3/vn3
+        "g" | "o" | "mtllib" | "usemtl" => {
+            eprintln!("{index}:Warning {line_type} is not implemented")
+        }
+        "s" => {
+            let args: Vec<_> = rest.split_whitespace().collect();
+            if args.len() > 1 {
+                return Err(error!(InvalidParameterNumber));
+            }
+            match args[0] {
+                "off" => (),
+                "on" => return Err(error!(Unsupported("s on".into()))),
+                _ => return Err(error!(InvalidEntry(line_type.into()))),
+            }
+
+        }
+        "p" | "l" | "curv" | "curv2D" | "surf" | "mg" | "parm" | "trim" | "hole"
+        | "scrv" | "sp" | "end" | "con" => return Err(error!(Unsupported(line_type.into()))),
+        _ => return Err(error!(InvalidEntry(line_type.into()))),
+    };
+    Ok(())
+}
+
+pub fn parse_obj(reader: impl BufRead) -> Result<Model, ParseError> {
     let mut positions_color: Vec<VertexData> = Vec::new();
     let mut normals: Vec<Vector3<f32>> = Vec::new();
     let mut texture_coords: Vec<(f32, f32)> = Vec::new();
@@ -175,121 +303,17 @@ pub fn parse_obj(reader: impl BufRead) -> Result<Model, ParseError> {
             line_no: index,
             err_type: ErrorType::IOError(err),
         })?;
-        macro_rules! error {
-            ($err:expr) => {
-                ParseError {
-                    line: Some(line.clone()),
-                    line_no: index,
-                    err_type: $err,
-                }
-            };
-        }
-        if line.starts_with("#") {
-            continue;
-        }
-        if line.is_empty() {
-            continue;
-        }
-        let (line_type, rest) = line.split_once(' ').ok_or(error!(InvalidLine))?;
-        match line_type {
-            "v" => {
-                let args: Vec<_> = rest
-                    .split_whitespace()
-                    .enumerate()
-                    .map(|(i,s)| s.parse::<f32>().map_err(|_| error!(InvalidParameter(i))))
-                    .collect::<Result<_,_>>()?;
-
-                let mut iter = args.iter().cloned();
-                match args.len() {
-                    3 => positions_color.push(VertexData {
-                        position: Vector3::from_iterator(&mut iter),
-                        color: None,
-                    }), // x y z
-                    4 => {
-                        // x y z w
-                        positions_color.push(VertexData {
-                            position: Vector3::from_iterator(&mut iter),
-                            color: None,
-                        }); // x y z w
-                        eprintln!("{index}: w component ignored");
-                    }
-                    6 => positions_color.push(VertexData {
-                        position: Vector3::from_iterator(&mut iter),
-                        color: Some(Vector3::from_iterator(&mut iter)),
-                    }), // x y z r g b
-                    _ => return Err(error!(InvalidParameterNumber)),
-                }
-            }
-            "vt" => {
-                let args: Vec<_> = rest
-                    .split_whitespace()
-                    .enumerate()
-                    .map(|(i,s)| s.parse::<f32>().map_err(|_| error!(InvalidParameter(i))))
-                    .collect::<Result<_,_>>()?;
-                let mut iter = args.iter().cloned();
-                match args.len() {
-                    1|2 => texture_coords.push((iter.next().unwrap(), iter.next().unwrap_or(0.0))),
-                    3 => {
-                        texture_coords.push((iter.next().unwrap(), iter.next().unwrap()));
-                        eprintln!("{index}:Texture w coordinate ignored");
-                    },
-                    _ => return Err(error!(InvalidParameterNumber)),
-                }
-
-            }, // vt u [v, w]
-            "vn" => {
-                let args: Vec<_> = rest
-                    .split_whitespace()
-                    .enumerate()
-                    .map(|(i,s)| s.parse::<f32>().map_err(|_| error!(InvalidParameter(i))))
-                    .collect::<Result<_,_>>()?;
-                if args.len() != 3 {
-                    return Err(error!(InvalidParameterNumber));
-                }
-                let mut iter = args.iter().cloned();
-                normals.push(Vector3::from_iterator(&mut iter));
-            }, //vn x y z  (may not be unit)
-            "f" => {
-                let args : Vec<_> = rest
-                    .split_whitespace()
-                    .enumerate().map (
-                    |(i,s)|
-                        FaceInfoRaw::parse(s)
-                        .ok_or(error!(InvalidParameter(i)))
-                    ).collect::<Result<_,_>>()?;
-                if let Some(bad) = args.iter().enumerate().find(|(_i,f)| !f.same_shape(&args[0])) {
-                    return Err(error!(InvalidParameter(bad.0)));
-                }
-
-                let mut args: Vec<_> = args.iter().map(|f|f.get_indices(positions_color.len(), texture_coords.len(), normals.len()))
-                .collect::<Result<_,_>>().map_err(|e| error!(e))?;
-                if args.len() < 3 {
-                    return Err(error!(InvalidParameterNumber));
-                }
-                if args.len() > 3 {
-                    args = fan_triangulation(args);
-                }
-                indices.extend(args);
-            }
-            ,  // f v1/vt1/vn1 v2/vt2/vn2 v3/vt3/vn3
-            "g" | "o" | "mtllib" | "usemtl" => {
-                eprintln!("{index}:Warning {line_type} is not implemented")
-            }
-            "s" => {
-                let args: Vec<_> = rest.split_whitespace().collect();
-                if args.len() > 1 {
-                    return Err(error!(InvalidParameterNumber));
-                }
-                match args[0] {
-                    "off" => (),
-                    "on" => return Err(error!(Unsupported("s on".into()))),
-                    _ => return Err(error!(InvalidEntry(line))),
-                }
-
-            }
-            "p" | "l" | "curv" | "curv2D" | "surf" | "mg" | "parm" | "trim" | "hole"
-            | "scrv" | "sp" | "end" | "con" => return Err(error!(Unsupported(line_type.into()))),
-            _ => return Err(error!(InvalidEntry(line_type.into()))),
+        let res = parse_one_line(
+            index,
+            line,
+            &mut positions_color,
+            &mut normals,
+            &mut texture_coords,
+            &mut indices,
+        );
+        match res {
+            Ok(()) => (),
+            Err(err) => return Err(err),
         }
     }
     //normalization
