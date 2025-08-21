@@ -40,7 +40,7 @@ impl Display for ErrorType {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
             ErrorType::IOError(e) => write!(f, "{e}"),
-            ErrorType::Unsupported(t) => write!(f, "Unssuported entry type : '{t}'"),
+            ErrorType::Unsupported(t) => write!(f, "Unsuported entry type : '{t}'"),
             ErrorType::InvalidEntry(t) => write!(f, "Invalid entry type : '{t}'"),
             ErrorType::IndexOutOfBound(i) => write!(f, "Index {i} is out of bound"),
             ErrorType::InvalidParameter(p) => write!(f, "Parameter #{p} is invalid"),
