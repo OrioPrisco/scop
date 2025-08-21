@@ -278,8 +278,7 @@ fn parse_one_line(
             }
             match args[0] {
                 "off" => (),
-                "on" => return Err(error!(Unsupported("s on".into()))),
-                _ => return Err(error!(InvalidEntry(line_type.into()))),
+                _ => return Err(error!(Unsupported("s on".into()))),
             }
 
         }
