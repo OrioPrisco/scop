@@ -195,13 +195,11 @@ pub fn parse_obj(reader: impl BufRead) -> Result<Model, ParseError> {
             "v" => {
                 let args: Vec<_> = rest
                     .split_whitespace()
-                    .map(|s| s.parse::<f32>())
-                    .collect();
+                    .enumerate()
+                    .map(|(i,s)| s.parse::<f32>().map_err(|_| error!(InvalidParameter(i))))
+                    .collect::<Result<_,_>>()?;
 
-                if let Some(err) = args.iter().enumerate().find(|r| r.1.is_err()) {
-                    return Err(error!(InvalidParameter(err.0)));
-                }
-                let mut iter = args.iter().map(|r| *r.as_ref().unwrap());
+                let mut iter = args.iter().cloned();
                 match args.len() {
                     3 => positions_color.push(VertexData {
                         position: Vector3::from_iterator(&mut iter),
