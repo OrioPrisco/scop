@@ -89,14 +89,10 @@ pub fn run(config: Config) -> Result<(), Box<dyn Error>> {
     //TODO delete shaders
 
     let texture = Texture::new();
-    let texture2 = Texture::new();
     let mut txt_ctx_0 = texture_contexts.remove(0);
-    let mut txt_ctx_1 = texture_contexts.remove(0);
     let bound_text = texture.bind(&mut txt_ctx_0, &mut active_texture);
-    let bound_text2 = texture2.bind(&mut txt_ctx_1, &mut active_texture);
 
     bound_text.bind_data_from_path("img/test.png", &mut active_texture)?;
-    bound_text2.bind_data_from_path("img/awesomeface.png", &mut active_texture)?;
 
     let mut camera_pos = Vector3 {
         x: 0.0,
@@ -167,7 +163,6 @@ pub fn run(config: Config) -> Result<(), Box<dyn Error>> {
         unsafe { shader_program.set_mat(c"projection", &projection) }
             .ok_or("Cannot set projection uniform")?;
         unsafe { shader_program.set_texture(c"texture1", &bound_text) };
-        unsafe { shader_program.set_texture(c"texture2", &bound_text2) };
         let bound_vao = BoundVao::new(&mut vao, context);
         unsafe { shader_program.set_mat(c"model", &model) }.ok_or("Cannot set model uniform")?;
         unsafe { shader_program.set_vec3(c"lightPos", k * 100.0) }.ok_or("Cannot set lightPos uniform")?;
