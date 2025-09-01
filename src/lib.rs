@@ -46,8 +46,7 @@ impl Config {
 }
 
 pub fn run(config: Config) -> Result<(), Box<dyn Error>> {
-    use glfw::fail_on_errors;
-    let mut glfw = glfw::init(fail_on_errors!())?;
+    let mut glfw = glfw::init_no_callbacks()?;
     glfw.window_hint(glfw::WindowHint::ContextVersion(3, 3));
     glfw.window_hint(glfw::WindowHint::OpenGlProfile(
         glfw::OpenGlProfileHint::Core,
