@@ -144,7 +144,7 @@ pub fn run(config: Config) -> Result<(), Box<dyn Error>> {
         let time_value = glfw.get_time() as f32;
         let delta_time = time_value - last_frame;
         last_frame = time_value;
-        let camera_front = camera_target - camera_pos;
+        let camera_front = -k;// camera_target - camera_pos;
 
         process_input(
             &mut window,
@@ -154,6 +154,8 @@ pub fn run(config: Config) -> Result<(), Box<dyn Error>> {
             &up,
             &mut scale,
         );
+
+        let camera_target = camera_pos + camera_front;
 
         let view = Mat4::lookat(camera_pos, camera_target, up);
         let model = Mat4::rotate(&j, time_value / 6.0) * Mat4::scale(&(ijk * scale));
