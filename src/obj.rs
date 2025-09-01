@@ -116,6 +116,7 @@ struct FaceInfo {
     pub vertex: u32,
     pub texture: Option<u32>,
     pub normal: Option<u32>,
+    pub face_no: usize,
 }
 
 impl FaceInfoRaw {
@@ -147,6 +148,7 @@ impl FaceInfoRaw {
         vertices_len: usize,
         textures_size: usize,
         normals_size: usize,
+        face_no: usize,
     ) -> Result<FaceInfo, ErrorType> {
         Ok(FaceInfo {
             vertex: get_index(vertices_len, self.vertex)?,
@@ -158,6 +160,7 @@ impl FaceInfoRaw {
                 .normal
                 .map(|i| get_index(normals_size, i))
                 .transpose()?,
+            face_no,
         })
     }
 }
@@ -258,7 +261,7 @@ fn parse_one_line(
                 return Err(error!(InvalidParameter(bad.0)));
             }
 
-            let mut args: Vec<_> = args.iter().map(|f|f.get_indices(positions_color.len(), texture_coords.len(), normals.len()))
+            let mut args: Vec<_> = args.iter().map(|f|f.get_indices(positions_color.len(), texture_coords.len(), normals.len(), indices.last().map_or(0, |f| f.face_no + 1)))
             .collect::<Result<_,_>>().map_err(|e| error!(e))?;
             if args.len() < 3 {
                 return Err(error!(InvalidParameterNumber));
@@ -356,6 +359,7 @@ pub fn parse_obj(reader: impl BufRead, ignore_unimplemented: bool) -> Result<Mod
     let mut verts_index: HashMap<FaceInfo, u32> = HashMap::with_capacity(indices.len());
     let mut fixed_indices: Vec<u32> = Vec::with_capacity(indices.len());
     let mut fixed_verts: Vec<Vertex> = Vec::with_capacity(positions_color.len());
+    let total_indices = indices.len();
     for indices in indices {
         if let Some(vert_index) = verts_index.get(&indices) {
             fixed_indices.push(*vert_index);
@@ -377,7 +381,7 @@ pub fn parse_obj(reader: impl BufRead, ignore_unimplemented: bool) -> Result<Mod
             let distance_2d = (pos_2d - mid_2d).norm();
             fixed_verts.push(Vertex {
                 position: (position - middle_coord) / largest_axis,
-                color: pos_color.color.unwrap_or(Vector3::zero()),
+                color: Vector3{x:1.0,y:1.0,z:1.0} * ((0.2 * indices.face_no as f32 % 1.0 / 2.5) + (indices.face_no as f32 / total_indices as f32 / 2.0)),
                 texture_coordinates: text_index.map(|i| texture_coords[i as usize]).unwrap_or(
                     if texture_coords.is_empty() {
                         (angle + distance_2d, position.y - min_coord.y)
