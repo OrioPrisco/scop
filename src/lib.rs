@@ -108,6 +108,11 @@ pub fn run(config: Config) -> Result<(), Box<dyn Error>> {
         y: 1.0,
         z: 0.0,
     };
+    let k = Vector3 {
+        x: 0.0,
+        y: 0.0,
+        z: 1.0,
+    };
     let ijk = Vector3 {
         x: 1.0,
         y: 1.0,
@@ -165,6 +170,7 @@ pub fn run(config: Config) -> Result<(), Box<dyn Error>> {
         unsafe { shader_program.set_texture(c"texture2", &bound_text2) };
         let bound_vao = BoundVao::new(&mut vao, context);
         unsafe { shader_program.set_mat(c"model", &model) }.ok_or("Cannot set model uniform")?;
+        unsafe { shader_program.set_vec3(c"lightPos", k * 100.0) }.ok_or("Cannot set lightPos uniform")?;
 
         bound_vao.draw_elements();
         context = bound_vao.unbind();

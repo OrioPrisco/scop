@@ -364,6 +364,7 @@ pub fn parse_obj(reader: impl BufRead, ignore_unimplemented: bool) -> Result<Mod
             fixed_indices.push(fixed_verts.len() as u32);
             let pos_index = indices.vertex;
             let text_index = indices.texture;
+            let norm_index = indices.normal;
             let pos_color = &positions_color[pos_index as usize];
             let position = pos_color.position;
             let pos_2d = Vector2 {

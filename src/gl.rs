@@ -411,6 +411,7 @@ pub mod shader {
 
     //TODO:impl Drop
     use crate::math::matrix::Mat4;
+    use crate::math::vector::Vector3;
     pub struct ShaderProgram(GLuint);
     impl ShaderProgram {
         //TODO: Maybe take an array of programs ?
@@ -486,6 +487,26 @@ pub mod shader {
             }
             unsafe {
                 gl::UniformMatrix4fv(location, 1, gl::TRUE, (&mat.components[0][0]) as *const f32)
+            };
+            match get_error() {
+                Err(GLError::InvalidOperation) => None, //location does not have the expected type
+                err => {
+                    err.unwrap();
+                    Some(())
+                }
+            }
+        }
+        /// # Safety
+        /// Not memory unsafe but this doesn't check that self is the progra, currently in use, so
+        /// it could produce unexpected results
+        pub unsafe fn set_vec3(&self, name: &CStr, vec: Vector3<f32>) -> Option<()> {
+            let location = unsafe { gl::GetUniformLocation(self.raw(), name.as_ptr()) };
+            get_error().unwrap();
+            if location == -1 {
+                return None;
+            }
+            unsafe {
+                gl::Uniform3f(location, vec.x, vec.y, vec.z)
             };
             match get_error() {
                 Err(GLError::InvalidOperation) => None, //location does not have the expected type
