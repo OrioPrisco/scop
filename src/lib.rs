@@ -165,7 +165,7 @@ pub fn run(config: Config) -> Result<(), Box<dyn Error>> {
         let camera_target = camera_pos + camera_front;
 
         let view = Mat4::lookat(camera_pos, camera_target, up);
-        let model = Mat4::rotate(&j, time_value / 6.0) * Mat4::scale(&(ijk * scale));
+        let model = Mat4::rotate(&j, -time_value / 6.0) * Mat4::scale(&(ijk * scale));
 
         shader_program.use_program();
         unsafe { shader_program.set_mat(c"view", &view) }.ok_or("Cannot set view uniform")?;
