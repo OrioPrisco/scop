@@ -166,6 +166,7 @@ pub fn run(config: Config) -> Result<(), Box<dyn Error>> {
         let bound_vao = BoundVao::new(&mut vao, context);
         unsafe { shader_program.set_mat(c"model", &model) }.ok_or("Cannot set model uniform")?;
         unsafe { shader_program.set_vec3(c"lightPos", k * 100.0) }.ok_or("Cannot set lightPos uniform")?;
+        unsafe { shader_program.set1f(c"TextureOrColor", time_value.cos().abs()) }.ok_or("Cannot set lightPos uniform")?;
 
         bound_vao.draw_elements();
         context = bound_vao.unbind();
