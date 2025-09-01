@@ -155,9 +155,18 @@ pub mod vao {
                     mem::size_of::<Vertex>() as i32,
                     (mem::size_of::<f32>() * 6) as *const c_void,
                 );
+                gl::VertexAttribPointer(
+                    3,
+                    3,
+                    gl::FLOAT,
+                    gl::FALSE,
+                    mem::size_of::<Vertex>() as i32,
+                    (mem::size_of::<f32>() * 8) as *const c_void,
+                );
                 gl::EnableVertexArrayAttrib(self.raw(), 0);
                 gl::EnableVertexArrayAttrib(self.raw(), 1);
                 gl::EnableVertexArrayAttrib(self.raw(), 2);
+                gl::EnableVertexArrayAttrib(self.raw(), 3);
             };
         }
         pub fn unbind_vbo(&mut self) {

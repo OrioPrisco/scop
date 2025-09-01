@@ -56,6 +56,7 @@ pub struct Vertex {
     pub position: Vector3<f32>,
     pub color: Vector3<f32>,
     pub texture_coordinates: (f32, f32),
+    pub normal: Vector3<f32>,
 }
 
 #[derive(Debug)]
@@ -383,6 +384,9 @@ pub fn parse_obj(reader: impl BufRead, ignore_unimplemented: bool) -> Result<Mod
                         (0.0, 0.0)
                     },
                 ),
+                normal: norm_index.map(|i| normals[i as usize]).unwrap_or(
+                    position - middle_coord
+                ).normalized(),
             });
         }
     }
