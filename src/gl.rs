@@ -479,6 +479,24 @@ pub mod shader {
         /// # Safety
         /// Not memory unsafe but this doesn't check that self is the progra, currently in use, so
         /// it could produce unexpected results
+        pub unsafe fn set1f(&self, name: &CStr, float: GLfloat) -> Option<()> {
+            let location = unsafe { gl::GetUniformLocation(self.raw(), name.as_ptr()) };
+            get_error().unwrap();
+            if location == -1 {
+                return None;
+            }
+            unsafe { gl::Uniform1f(location, float) };
+            match get_error() {
+                Err(GLError::InvalidOperation) => None, //location does not have the expected type
+                err => {
+                    err.unwrap();
+                    Some(())
+                }
+            }
+        }
+        /// # Safety
+        /// Not memory unsafe but this doesn't check that self is the progra, currently in use, so
+        /// it could produce unexpected results
         pub unsafe fn set_mat(&self, name: &CStr, mat: &Mat4<f32>) -> Option<()> {
             let location = unsafe { gl::GetUniformLocation(self.raw(), name.as_ptr()) };
             get_error().unwrap();
