@@ -124,13 +124,15 @@ pub fn run(config: Config) -> Result<(), Box<dyn Error>> {
         y: 1.0,
         z: 0.0,
     };
+    let mut texture_or_color = 1.0;
+    let mut texture_or_color_want = true;
     let mut last_frame = glfw.get_time() as f32;
     let mut scale = 1.0;
     let mut projection =
         Mat4::perspective(45.0, (SCR_WIDTH as f32) / (SCR_HEIGHT as f32), 0.1, 100.0);
     unsafe { gl::Enable(gl::DEPTH_TEST) };
     while !window.should_close() {
-        if let Some((width, height)) = process_events(&events) {
+        if let Some((width, height)) = process_events(&events, &mut texture_or_color_want) {
             projection = Mat4::perspective(45.0, (width as f32) / (height as f32), 0.1, 100.0);
         }
 
@@ -155,6 +157,11 @@ pub fn run(config: Config) -> Result<(), Box<dyn Error>> {
             &mut scale,
         );
 
+        if texture_or_color_want {
+            texture_or_color = (texture_or_color + delta_time / 1.5).min(1.0);
+        } else {
+            texture_or_color = (texture_or_color - delta_time / 1.5).max(0.0);
+        };
         let camera_target = camera_pos + camera_front;
 
         let view = Mat4::lookat(camera_pos, camera_target, up);
@@ -168,7 +175,7 @@ pub fn run(config: Config) -> Result<(), Box<dyn Error>> {
         let bound_vao = BoundVao::new(&mut vao, context);
         unsafe { shader_program.set_mat(c"model", &model) }.ok_or("Cannot set model uniform")?;
         unsafe { shader_program.set_vec3(c"lightPos", k * 100.0) }.ok_or("Cannot set lightPos uniform")?;
-        unsafe { shader_program.set1f(c"TextureOrColor", time_value.cos().abs()) }.ok_or("Cannot set lightPos uniform")?;
+        unsafe { shader_program.set1f(c"TextureOrColor", texture_or_color) }.ok_or("Cannot set lightPos uniform")?;
 
         bound_vao.draw_elements();
         context = bound_vao.unbind();
@@ -179,12 +186,21 @@ pub fn run(config: Config) -> Result<(), Box<dyn Error>> {
     Ok(())
 }
 
-fn process_events(events: &GlfwReceiver<(f64, glfw::WindowEvent)>) -> Option<(i32, i32)> {
+fn process_events(
+    events: &GlfwReceiver<(f64, glfw::WindowEvent)>,
+    texture_or_color_want: &mut bool,
+) -> Option<(i32, i32)> {
     let mut ret = None;
     for (_, event) in glfw::flush_messages(events) {
-        if let glfw::WindowEvent::FramebufferSize(width, height) = event {
-            unsafe { gl::Viewport(0, 0, width, height) };
-            ret = Some((width, height));
+        match event {
+            glfw::WindowEvent::FramebufferSize(width, height) => {
+                unsafe { gl::Viewport(0, 0, width, height) };
+                ret = Some((width, height));
+            }
+            glfw::WindowEvent::Key(Key::C, _, Action::Press, _) => {
+                *texture_or_color_want = !*texture_or_color_want;
+            }
+            _ => {}
         }
     }
     ret
