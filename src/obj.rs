@@ -347,6 +347,11 @@ pub fn parse_obj(reader: impl BufRead, ignore_unimplemented: bool) -> Result<Mod
         x: middle_coord.x,
         y: middle_coord.z,
     };
+    let largest_axis = (min_coord.x - max_coord.x).abs().max(
+        (min_coord.y - max_coord.y)
+            .abs()
+            .max((min_coord.z - max_coord.z).abs()),
+    );
     let mut verts_index: HashMap<FaceInfo, u32> = HashMap::with_capacity(indices.len());
     let mut fixed_indices: Vec<u32> = Vec::with_capacity(indices.len());
     let mut fixed_verts: Vec<Vertex> = Vec::with_capacity(positions_color.len());
@@ -369,7 +374,7 @@ pub fn parse_obj(reader: impl BufRead, ignore_unimplemented: bool) -> Result<Mod
             let angle = (pos_2d.dot(k) / pos_2d.norm()).acos();
             let distance_2d = (pos_2d - mid_2d).norm();
             fixed_verts.push(Vertex {
-                position: position - middle_coord,
+                position: (position - middle_coord) / largest_axis,
                 color: pos_color.color.unwrap_or(Vector3::zero()),
                 texture_coordinates: text_index.map(|i| texture_coords[i as usize]).unwrap_or(
                     if texture_coords.is_empty() {
