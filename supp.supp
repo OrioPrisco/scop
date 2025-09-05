@@ -1,0 +1,24 @@
+{
+    ignore_dlopen
+    Memcheck:Leak
+    ...
+    fun:dlopen*
+}
+{
+    ignore_glfwinit
+    Memcheck:Leak
+    ...
+    fun:glfwInit*
+}
+{
+    ignore_glfwinit
+    Memcheck:Leak
+    ...
+    fun:_XrmInitParseInfo
+}
+{
+    ignore_glfwinit
+    Memcheck:Leak
+    ...
+    fun:XrmGetStringDatabase
+}
