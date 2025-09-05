@@ -22,3 +22,21 @@
     ...
     fun:XrmGetStringDatabase
 }
+{
+    ignore_glad
+    Memcheck:Leak
+    ...
+    fun:_dl_open
+}
+{
+    ignore_glfwCreateWindow
+    Memcheck:Leak
+    ...
+    obj:*libdbus*.so*
+}
+{
+    literally_glfwTerminate
+    Memcheck:Leak
+    ...
+    fun:glfwTerminate
+}
