@@ -1,17 +1,20 @@
 NAME=scop
+TARGET_DIR=target/
+
 
 all: $(NAME)
 
 bonus: all
 
-$(NAME): $(CARGO_TARGET_DIR)/debug/$(NAME)
+$(NAME): $(TARGET_DIR)/debug/$(NAME) src/
 	cp $< $@
 
-$(CARGO_TARGET_DIR)/debug/$(NAME):
-	cargo build
+$(TARGET_DIR)/debug/$(NAME):
+	docker build -t rust_scop .
+	docker run --rm -v "$(PWD)":/usr/src/myapp -w /usr/src/myapp rust_scop cargo build
 
 clean:
-	cargo clean
+	rm -rf $(TARGET_DIR)
 
 fclean: clean
 	rm -f $(NAME)
