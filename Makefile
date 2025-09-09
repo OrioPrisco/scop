@@ -6,10 +6,10 @@ all: $(NAME)
 
 bonus: all
 
-$(NAME): $(TARGET_DIR)/debug/$(NAME) src/
+$(NAME): $(TARGET_DIR)/debug/$(NAME)
 	cp $< $@
 
-$(TARGET_DIR)/debug/$(NAME):
+$(TARGET_DIR)/debug/$(NAME): src/
 	docker build -t rust_scop .
 	docker run --rm -v "$(PWD)":/usr/src/myapp -w /usr/src/myapp rust_scop cargo build
 
