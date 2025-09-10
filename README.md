@@ -1,6 +1,6 @@
 # Scop
 
-Basic .onj viewer written in rust, a 42 project.
+Basic .obj viewer written in rust, a 42 project.
 
 ## Compiling
 
